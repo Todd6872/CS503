@@ -35,12 +35,15 @@ Please provide answers to these questions using markdown notation and place them
 
 
 3. Please provide a link to the repository you are using for this class.
-    https://github.com/Todd6872/CS503#
+
+https://github.com/Todd6872/CS503#
 
 4. Briefly describe what you want to get out of this class.
+
 I'd like to understand what an OS does behind the scenes and how code interacts with it.
 
 5. Briefly describe any concerns you might be having with being successful in this class (if any).
+
 Well, when I started getting the remote OS set up with all the tools, I was very concerned I was in over my head.
 I did eventually work through it though, thanks to Google. I think my C should be good enough, I just finished
 CS502 with professor Boady, which is all C all day.
