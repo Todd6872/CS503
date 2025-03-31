@@ -12,5 +12,5 @@
 
 4. Briefly describe any concerns you might be having with being successful in this class (if any).
 
-> I was very concerened I wouldn't get the remote Linus setup working, but I managed to Google my way through it.
-I don't think my C will be an issue as I just completed CS502 which is all C all day.
+> I was very concerened I wouldn't get the remote Linux setup working, but I managed to Google my way through it.
+Hopefully my C won't be an issue as I just completed CS502, which is taught in C.
