@@ -1,6 +1,6 @@
 1. Which platform will you use for assignments in this course? Options are Drexel Tux, WSL on Windows, OrbStack on MacOS, or other (if other, please specify)?
 
-> I'll be using Tux.
+> I'll be using Tux for the assignments.
 
 2. Have you set up your chosen platform and validated that software is working?
 
