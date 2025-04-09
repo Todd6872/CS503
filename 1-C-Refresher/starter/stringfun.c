@@ -16,7 +16,16 @@ int  count_words(char *, int, int);
 
 
 int setup_buff(char *buff, char *user_str, int len){
-    //TODO: Implement the setup buff as per the directions
+    
+      // Implement the setup buff as per the directions
+      int i = 0;
+      char lineCheck;
+    while (lineCheck != '\0'){
+        *(buff + i) = *(user_str + i);
+        lineCheck = *(buff + i);
+        //printf("%c\n", *(buff + i));
+        i++;
+    }
     return 0; //for now just so the code compiles. 
 }
 
@@ -67,11 +76,9 @@ int main(int argc, char *argv[]){
     }
 
     input_string = argv[2]; //capture the user input string
-
-    //TODO: Allocate space for the buffer using malloc and
-    //          handle error if malloc fails by exiting with a 
-    //          return code of 99
-
+          
+    buff = malloc (BUFFER_SZ); //Allocate space for the buffer using malloc and
+    if (*buff = NULL){exit(99);} //handle error if malloc fails by exiting with a return code of 99
 
     user_str_len = setup_buff(buff, input_string, BUFFER_SZ);     //see todos
     if (user_str_len < 0){
