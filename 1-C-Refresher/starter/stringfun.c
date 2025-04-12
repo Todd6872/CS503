@@ -28,7 +28,6 @@ int setup_buff(char *buff, char *user_str, int len){
     int iUser = 0; //input string pointer
     char buffCurrent = '0'; //hold contents of the buffer at location iBuffer
     int spaceCount = 0; //counts the number of sequential spaces encountered
-    int iUserMax = 0;
 
     while (*(user_str + iUser) == 32 || *(user_str + iUser) == 9){iUser++;} // jump the string pointer over any leading spaces
 
@@ -272,8 +271,8 @@ int main(int argc, char *argv[]){
     }
 
     input_string = argv[2]; //capture the user input string
-    search_string = argv[3];
-    replace_string = argv[4];
+    search_string = argv[3]; //search term
+    replace_string = argv[4]; //replace term
 
     buff = malloc (STRING_SZ); //Allocate space for the buffer using malloc and
     if (buff == NULL){exit(99);} //handle error if malloc fails by exiting with a return code of 99
