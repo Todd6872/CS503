@@ -102,7 +102,7 @@ Please answer the following questions and submit in your repo for the second ass
 
     - Please explain why the file size reported by the `ls` command was 128 bytes after adding student with ID=1, 256 after adding student with ID=3, and 4160 after adding the student with ID=64? 
 
-        > **ANSWER:** ls is showing the file size, while du is showing the disk allocation.  Since the disks space is allocated in blocks (in this case 4k), the actual disk space allocated will be in multiples of 4k.
+        > **ANSWER:** ID of 1 has a starting address of 64 bytes and is 64 bytes in size, which gives you 128 bytes.  ID of 3 has a starting address of 192 bytes and is 64 bytes in size, giving you a total of 256 bytes.  ID of 64 has a starting address of 4096 bytes and is 64 bytes in size, giving you a total of 4160 bytes.
 
     -   Why did the total storage used on the disk remain unchanged when we added the student with ID=1, ID=3, and ID=63, but increased from 4K to 8K when we added the student with ID=64? 
 
