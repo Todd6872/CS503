@@ -67,8 +67,9 @@ int get_student(int fd, int id, student_t *s)
     off_t sz = 1;
     int fileOffset = 64;
     int success = 0;
-    while (sz != 0)
+    while (sz != 0) //While you're not at the end of the file
     {
+        //set the file offset
         off_t lseek_result = lseek(fd, fileOffset, SEEK_SET);
 
         if (lseek_result < 0)
@@ -78,9 +79,11 @@ int get_student(int fd, int id, student_t *s)
             return ERR_DB_FILE;// todo return the db file error code
         }
 
+        //read the current student file
         sz = read(fd, student, 64);
         if (sz <= 0){break;}
 
+        //if this is the id you're looking for copy file info into student structure
         if (student->id == id)
         {
             s->id = student->id;
@@ -89,7 +92,7 @@ int get_student(int fd, int id, student_t *s)
             s->gpa = student->gpa;
             success = 1;
         }
-
+        //advance to next entry
         fileOffset += 64;
     }
     free(student);
@@ -128,13 +131,16 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa)
     student_t student = {0};
     int rc = get_student(fd, id, &student);
 
+    //if the file doesn't exist, add it.
     if (rc == SRCH_NOT_FOUND)
     {
+        //copy data into structure
         student.id = id;
         strncpy(student.fname, fname, sizeof(student.fname));
         strncpy(student.lname, lname, sizeof(student.lname));
         student.gpa = gpa;
 
+        //set file offset based on ID.
         off_t lseek_result = lseek(fd, offset, SEEK_SET);
         if (lseek_result < 0)
         {
@@ -142,6 +148,7 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa)
             return ERR_DB_FILE;// todo return the db file error code
         }
 
+        //write file
         ssize_t bytes_written = write(fd, &student, STUDENT_RECORD_SIZE);
         if (bytes_written < 0) // TODO - what is the other condition you should check about bytes_written
         {
@@ -157,7 +164,8 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa)
     return ERR_DB_OP;
 }
 
-
+//This is the same as add_Student but it doesn't print anything out
+//I needed this for my compression utility (-x)
 int add_studentNoPrint(int fd, int id, char *fname, char *lname, int gpa);
 int add_studentNoPrint(int fd, int id, char *fname, char *lname, int gpa)
 {
@@ -165,13 +173,16 @@ int add_studentNoPrint(int fd, int id, char *fname, char *lname, int gpa)
     student_t student = {0};
     int rc = get_student(fd, id, &student);
 
+    //if the file doesn't exist, add it.
     if (rc == SRCH_NOT_FOUND)
     {
+        //copy data into structure
         student.id = id;
         strncpy(student.fname, fname, sizeof(student.fname));
         strncpy(student.lname, lname, sizeof(student.lname));
         student.gpa = gpa;
 
+        //set file offset based on ID.
         off_t lseek_result = lseek(fd, offset, SEEK_SET);
         if (lseek_result < 0)
         {
@@ -179,6 +190,7 @@ int add_studentNoPrint(int fd, int id, char *fname, char *lname, int gpa)
             return ERR_DB_FILE;// todo return the db file error code
         }
 
+        //write file
         ssize_t bytes_written = write(fd, &student, STUDENT_RECORD_SIZE);
         if (bytes_written < 0) // TODO - what is the other condition you should check about bytes_written
         {
@@ -217,26 +229,31 @@ int add_studentNoPrint(int fd, int id, char *fname, char *lname, int gpa)
  */
 int del_student(int fd, int id)
 {
-    // TODO
     student_t* student = malloc(sizeof(student_t));
     int success = 0;
     off_t offset = id * STUDENT_RECORD_SIZE;
+
+    //use get_student function to check if the file exists
     int rc = get_student(fd, id, student);
+
+    //if the file exists delete it
     if (rc == NO_ERROR && student->id == id)
     {
+        //make a new student structure and copy in the empty records constants.
         student->id = EMPTY_STUDENT_RECORD.id;
         strncpy(student->fname,  EMPTY_STUDENT_RECORD.fname, strlen(student->fname));
         strncpy(student->lname, EMPTY_STUDENT_RECORD.lname, strlen(student->lname));
         student->gpa = EMPTY_STUDENT_RECORD.gpa;
 
+        //set file offset
         off_t lseek_result = lseek(fd, offset, SEEK_SET);
-
         if (lseek_result < 0)
         {
             printf(M_ERR_DB_READ);// todo print the db read error message
             return ERR_DB_FILE;// todo return the db file error code
         }
 
+        //write empy student structure
         ssize_t bytes_written = write(fd, &student, STUDENT_RECORD_SIZE);
         if (bytes_written < 0) // TODO - what is the other condition you should check about bytes_written
         {
@@ -248,6 +265,7 @@ int del_student(int fd, int id)
         success = 1;
     }
 
+    //if operations failed...
     if (success == 0)
     {
         printf(M_STD_NOT_FND_MSG, id);
@@ -283,14 +301,15 @@ int del_student(int fd, int id)
  */
 int count_db_records(int fd)
 {
-    // TODO
     student_t* student = malloc (64 * sizeof(student_t));
     off_t sz = 1;
     int fileOffset = 64;
     int fileCount = 0;
 
+    //while not at the end of the file
     while (sz != 0)
     {
+        //set file offset
         off_t lseek_result = lseek(fd, fileOffset, SEEK_SET);
         if (lseek_result < 0)
         {
@@ -299,11 +318,16 @@ int count_db_records(int fd)
             return ERR_DB_FILE;// todo return the db file error code
         }
 
+        //read a student entry
         sz = read(fd, student, 64);
         if (sz <= 0){break;}
+
+        //If it's not empty add to file count
         if (student->id > 0 && student->id <= 100000 && student->lname != "A" && student->gpa != 1){fileCount++;}
+        // Increment offset to next file location
         fileOffset += 64;
     }
+
     if (fileCount == 0)
     {
         printf(M_DB_EMPTY);
@@ -350,15 +374,16 @@ int count_db_records(int fd)
  */
 int print_db(int fd)
 {
-    // TODO
     student_t* student = malloc (64 * sizeof(student_t));
     off_t sz = 1;
     int fileOffset = 64;
     int printOnce = 1;
     int idCounter = 0;
 
+    //while not at the end of the file
     while (sz != 0)
     {
+        //set the file offset
         off_t lseek_result = lseek(fd, fileOffset, SEEK_SET);
         if (lseek_result < 0)
         {
@@ -367,11 +392,15 @@ int print_db(int fd)
             return ERR_DB_FILE;// todo return the db file error code
         }
 
+        //read student file into student structure
         sz = read(fd, student, 64);
         if (sz <= 0){break;}
+
+        //convert GPA to decimal
         float gpa = student->gpa;
         float calculated_gpa_from_student = gpa / 100;
 
+        //if the file entry isn't empty print it out
         if (student->id > 0 && student->id <= 100000 && student->lname != "A" && student->gpa != 1)
         {
             if (printOnce)
@@ -382,6 +411,7 @@ int print_db(int fd)
             printf(STUDENT_PRINT_FMT_STRING, student->id, student->fname, student->lname, calculated_gpa_from_student);
             idCounter++;
         }
+        //increment offset to next file location
         fileOffset += 64;
     }
     if (idCounter == 0){printf(M_DB_EMPTY);}
@@ -419,11 +449,13 @@ int print_db(int fd)
  */
 void print_student(student_t *s)
 {
-    // TODO
+    //If you've passed in valid information
     if (s->id != 0 || s != NULL)
     {
+        //convert GPA to decimal
         float gpa = s->gpa;
         float calculated_gpa_from_s = gpa / 100;
+        //print entry
         printf(STUDENT_PRINT_HDR_STRING, "ID","FIRST NAME", "LAST_NAME", "GPA");
         printf(STUDENT_PRINT_FMT_STRING, s->id, s->fname,s->lname, calculated_gpa_from_s);
     }
@@ -480,18 +512,20 @@ void print_student(student_t *s)
  */
 int compress_db(int fd)
 {
-    // TODO
     off_t sz = 1;
     int fileOffset = 64;
     int idCounter = 0;
     int rc;
 
-    //create db array
+    //create db array (array of student structures)
     student_t* studentArray = malloc (64 * sizeof(student_t));
 
+    //while not at the end of the file
     while (sz != 0)
     {
+        //create new student stucture
         student_t* student = malloc (64 * sizeof(student_t));
+        //set file offset
         off_t lseek_result = lseek(fd, fileOffset, SEEK_SET);
         if (lseek_result < 0)
         {
@@ -501,6 +535,7 @@ int compress_db(int fd)
             return ERR_DB_FILE;// todo return the db file error code
         }
 
+        //read file into student structure
         sz = read(fd, student, 64);
         if (sz <= 0)
         {
@@ -508,26 +543,19 @@ int compress_db(int fd)
             break;
         }
 
+        //if not an empty entry copy structure into array for storage
         if (student->id > 0 && student->id <= 100000 && student->lname != "A" && student->gpa != 1)
         {
             studentArray[idCounter] = *student;
             idCounter++;
         }
+        //increment to the next entry
         fileOffset += 64;
         free(student);
     }
     if (idCounter == 0){printf(M_DB_EMPTY);}
 
-    //print array
-    //for (int i = 0; i < idCounter; i++)
-    //{
-    //    printf("ID: %d\n", studentArray[i].id);
-    //    printf("FIRST_NAME: %s\n", studentArray[i].fname);
-    //    printf("LAST_NAME: %s\n", studentArray[i].lname);
-    //    printf("GPA: %d\n", studentArray[i].gpa);
-    //}
-
-    //delete db
+    //delete db file
     close(fd);
     fd = open_db(DB_FILE, true);
     if (fd < 0)
@@ -537,7 +565,7 @@ int compress_db(int fd)
     }
     close(fd);
 
-    //open db
+    //open db file
     fd = open_db(DB_FILE, false);
     if (fd < 0)
     {
@@ -546,7 +574,7 @@ int compress_db(int fd)
         return ERR_DB_FILE;
     }
 
-    // write db
+    // write db (loop through the structure array and write to file
     for (int i = 0; i < idCounter; i++)
     {
         rc = add_studentNoPrint(fd, studentArray[i].id, studentArray[i].fname, studentArray[i].lname, studentArray[i].gpa);
