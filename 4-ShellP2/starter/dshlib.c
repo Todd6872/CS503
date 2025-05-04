@@ -68,10 +68,7 @@ int exec_local_cmd_loop()
     
     // initialize argList
     char** argList = malloc(sizeof(argList) * 20);
-    for (int k=0; k < 20; k++)
-    {
-        argList[k] = malloc(sizeof(char) * 50);
-    }
+    for (int k=0; k < 20; k++){argList[k] = malloc(sizeof(char) * 50);}
 
     while (1)
     {
@@ -79,6 +76,8 @@ int exec_local_cmd_loop()
         strcpy(cmd->_cmd_buffer, "                                       ");
         strcpy(cmd->argv, "                                       ");
         cmd->argc = 0;
+        // clear argList
+        for (int k=0; k < 20; k++){strcpy(argList[k], " ");}
 
         //get input
         printf("%s", SH_PROMPT);
@@ -92,10 +91,8 @@ int exec_local_cmd_loop()
 
     // TODO IMPLEMENT parsing input to cmd_buff_t *cmd_buff
         rc = parse_cmd_buff(cmd_buff, cmd);
-        //printf("cmd: %s\n", cmd->_cmd_buffer);
-        //printf("args: %s\n", cmd->argv);
         
-
+        
     // TODO IMPLEMENT if built-in command, execute builtin logic for exit, cd (extra credit: dragon)
     // the cd command should chdir to the provided directory; if no directory is provided, do nothing
     // TODO if exit command, exit return code 0
@@ -118,7 +115,8 @@ int exec_local_cmd_loop()
     {
         int rc = parseArgs(argList, cmd);
         //print args
-        for (int j=0; j< cmd->argc; j++){printf("%s\n", argList[j]);}
+        for (int j=0; j < cmd->argc; j++){printf("%s\n", argList[j]);}
+        
         if (rc == -1)
         {
             free(cmd_buff);
@@ -250,12 +248,7 @@ int parse_cmd_buff(char *cmd_buff, cmd_buff_t *cmd)
     int count = 0;
     while (i < strlen(cmd_buff))
     {
-        //check if number of commands is greater than 8
-        //if (count >= 8)
-        //{
-            //free(command);
-        //    return ERR_TOO_MANY_COMMANDS;
-        //}
+        
         char* commandUnparsed = malloc(sizeof(char)*strlen(cmd_buff));
         
         //make sure command unparsed is actually empty
@@ -264,13 +257,6 @@ int parse_cmd_buff(char *cmd_buff, cmd_buff_t *cmd)
             commandUnparsed[k] = NULL;
         }
 
-        //make sure cmd_buffer is actually empty
-        //for (int k=0; k < 20; k++)
-        //{
-        //    cmd_buff[k] = ' ';
-        //}
-        //strcpy(cmd_buff, "                                         ");
-        
         //parse commands using pipe
         while (cmd_buff[i] != PIPE_CHAR)
         {
@@ -289,13 +275,9 @@ int parse_cmd_buff(char *cmd_buff, cmd_buff_t *cmd)
         //advance j to next space in command (end of command statement)
         while (commandUnparsed[j] != SPACE_CHAR){j++;}
         
-        //printf("command unparsed: %s\n", commandUnparsed);
         //copy command to command structure
-
         strncpy(cmd->_cmd_buffer, commandUnparsed, j);
         
-        //cmd->_cmd_buffer = commandUnparsed;
-        //printf("cmd buffer: %s\n", cmd->_cmd_buffer);
         
         //if args was found tack it on to the command
         formatString(cmd->_cmd_buffer);
@@ -398,7 +380,6 @@ void formatString(char *string)
 
     free(temp);
 
-    //printf("string: %s\n", string);
     //               remove trailing zeros
 
     //move index to the end of the string
@@ -424,6 +405,8 @@ void formatString(char *string)
     free(temp);
 }
 
+//This is for use with anything in quotes
+// it clears every up to and including the first quote
 void stripLeadingZeros(char *string)
 {
     //                 remove leading zeros
@@ -433,7 +416,7 @@ void stripLeadingZeros(char *string)
     //copy string to temp
     strcpy(temp, string);
 
-    //count forward from the start of the string until you hit real data
+    //count forward from the start of the string until you hit a quote
     while (string[count] != 34){count++;}
 
     //copy temp to string
@@ -463,6 +446,7 @@ int changeDir(char* newDirectory)
     return -1;
 }
 
+//not used - prints directory without for-exec
 int listDir(void)
 {
     DIR *dir;
@@ -479,6 +463,8 @@ int listDir(void)
     printf("\n");
     return 0;
 }
+
+//not used - prints directory without for-exec (same as -l)
 int listDirDetailed(void)
 {
     DIR *dir;
@@ -490,7 +476,6 @@ int listDirDetailed(void)
     if (dir == NULL){return -1;}
     while ((entry = readdir(dir)) != NULL)
     {
-        //if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")){printf("%s  ", entry->d_name);}
         if (stat(entry->d_name, &file_stat) == 0) {
             strftime(date_time, sizeof(date_time), "%Y-%m-%d %H:%M:%S", localtime(&file_stat.st_mtime));
             printf("%s\t%s\n", date_time, entry->d_name);
@@ -503,72 +488,65 @@ int listDirDetailed(void)
     return 0;
 }
 
+//parses multple args inlcuding anything in quotes
 int parseArgs(char** argList, cmd_buff_t *cmd)
 {
     char* argCpy = malloc(sizeof(char) * 50);
     char* temp = malloc(sizeof(char) * 50);
-    //char** argList = malloc(sizeof(argList) * 20);
-    // initialize argList
-    //for (int k=0; k < 20; k++)
-    //{
-    //    argList[k] = malloc(sizeof(char) * 50);
-    //}
     
     int argCount = 0;
     int i=0;
     
+    
     //append a space to the end so search works
     strcat(cmd->argv, " ");
+    
     //copy cmd->argv to argCpy
     strcpy(argCpy, cmd->argv);
+
     //clear cmd->argv
-    strcpy(cmd->argv, "                                                  ");
-    //printf("argCpy: %s\n", argCpy);
+    for (int k=0; k < strlen(cmd->argv); k++){cmd->argv[k] = SPACE_CHAR;}
+    //strcpy(cmd->argv, "");
 
-    //for (int k=0; k < strlen(argCpy); k++)
-    //{
-    //    printf("argCpy[%d]: %c, ", k, argCpy[k]);
-    //}
-    //printf("\n");
-
+    //begin parse
     while (strlen(argCpy) > 0)
     {
+        //clear cmd->argv
         strcpy(cmd->argv, "                                                  ");
-        i=0;
+        
         //find first space or quote
+        i=0;
         while (argCpy[i] != 32 && argCpy[i] != 34){i++;}
 
+        //if the first thing we find is a space capture that arg to argv
         if (argCpy[i] == SPACE_CHAR){strncpy(cmd->argv, argCpy, i);}
         
+        //if the first thing we find is a quote, find the next quote
         else if (argCpy[i] == 34)
         {
             //find next quote
             int k=1;
             while (argCpy[k] != 34 && k < strlen(argCpy)){k++;}
-
+            
             //copy to temp and format
-            char* temp = malloc(sizeof(char)*strlen(argCpy));
+            //create temp string
+            char* copyString = malloc(sizeof(char)*strlen(argCpy));
+            //clear temp string
+            strcpy(copyString, " ");
+            //move contents of argCpy to temp string
+            for (int copy = 0; copy < k; copy++){copyString[copy] = argCpy[copy];}
+            for (int copy = k; copy < strlen(copyString); copy++){copyString[copy] = SPACE_CHAR;}
             
-            strncpy(temp, argCpy, k);
-            //temp[k+1] = '\0';
-            
-            //formatString(temp);
-            //temp[0] = ' ';
-            stripLeadingZeros(temp);
+            //format temp string
+            stripLeadingZeros(copyString);
+            //move temp to argv
+            strcpy(cmd->argv, copyString);
 
-            //for (int k=0; k < strlen(temp); k++)
-            //{
-            //    printf("temp [%d]: %c, ", k, temp[k]);
-            //}
-            //printf("\n");
-            
-            //printf("temp: %s\n", temp);
-            strcpy(cmd->argv, temp);
             i = k+1;
-            free(temp);
+            free(copyString);
         }
-
-        //move arg to arg list
+        
+        //move arg to arg-list
         strcpy(argList[argCount], cmd->argv);
         
         //delete found arg from temp
@@ -581,17 +559,9 @@ int parseArgs(char** argList, cmd_buff_t *cmd)
 
     cmd->argc = argCount;
 
-    //print args
-    //for (int j=0; j< cmd->argc; j++)
-    //{
-    //    printf("arg[%d] = %s\n", j, argList[j]);
-    //}
-
     //free mallocs
     free(temp);
     free(argCpy);
-    //for (int k=0; k < 20; k++){free(argList[k]);}
-    //free(argList);
     
     return 0;
 }
@@ -600,16 +570,17 @@ int forkExec(cmd_buff_t *cmd, char* arg)
 {
     
     char *args[] = {cmd->_cmd_buffer, arg, NULL};
-    //char *args[] = {"uname", "-a", NULL};
     pid_t pid = fork();
 
     if (pid == -1) {
         perror("fork");
         exit(1);
     } else if (pid == 0) {
-        // Child process
+        // Run child process
         execvp(args[0], args);
-        perror("execvp"); // Executed only if execv fails
+        
+        // if execvp fails
+        perror("execvp"); 
         exit(1);
     } else {
         // Parent process
