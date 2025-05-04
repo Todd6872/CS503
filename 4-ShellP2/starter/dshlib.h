@@ -60,6 +60,7 @@ int listDir(void);
 int parseArgs(char** argList, cmd_buff_t *cmd);
 int listDirDetailed(void);
 int forkExec(cmd_buff_t *cmd, char* arg);
+void stripLeadingZeros(char *string);
 
 //built in command stuff
 typedef enum {

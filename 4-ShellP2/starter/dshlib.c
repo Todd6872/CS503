@@ -424,6 +424,28 @@ void formatString(char *string)
     free(temp);
 }
 
+void stripLeadingZeros(char *string)
+{
+    //                 remove leading zeros
+    int count = 0;
+    char* temp = malloc(2*sizeof(char)*strlen(string));
+
+    //copy string to temp
+    strcpy(temp, string);
+
+    //count forward from the start of the string until you hit real data
+    while (string[count] != 34){count++;}
+
+    //copy temp to string
+    for (int i = 0; i < strlen(temp); i++)
+    {
+        string[i] = temp[count + 1];
+        count++;
+    }
+
+    free(temp);
+}
+
 void printWorkingDir()
 {
     char cwd[100];
@@ -501,6 +523,13 @@ int parseArgs(char** argList, cmd_buff_t *cmd)
     strcpy(argCpy, cmd->argv);
     //clear cmd->argv
     strcpy(cmd->argv, "                                                  ");
+    //printf("argCpy: %s\n", argCpy);
+
+    //for (int k=0; k < strlen(argCpy); k++)
+    //{
+    //    printf("argCpy[%d]: %c, ", k, argCpy[k]);
+    //}
+    //printf("\n");
 
     while (strlen(argCpy) > 0)
     {
@@ -519,11 +548,20 @@ int parseArgs(char** argList, cmd_buff_t *cmd)
 
             //copy to temp and format
             char* temp = malloc(sizeof(char)*strlen(argCpy));
+            
             strncpy(temp, argCpy, k);
-            temp[k] = ' ';
-            temp[0] = ' ';
-            formatString(temp);
+            //temp[k+1] = '\0';
+            
+            //formatString(temp);
+            //temp[0] = ' ';
+            stripLeadingZeros(temp);
 
+            //for (int k=0; k < strlen(temp); k++)
+            //{
+            //    printf("temp [%d]: %c, ", k, temp[k]);
+            //}
+            //printf("\n");
+            
             //printf("temp: %s\n", temp);
             strcpy(cmd->argv, temp);
             i = k+1;
