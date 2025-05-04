@@ -93,7 +93,6 @@ int exec_local_cmd_loop()
         // TODO IMPLEMENT parsing input to cmd_buff_t *cmd_buff
         rc = parse_cmd_buff(cmd_buff, cmd);
         
-        
         // TODO IMPLEMENT if built-in command, execute builtin logic for exit, cd (extra credit: dragon)
         // the cd command should chdir to the provided directory; if no directory is provided, do nothing
         // TODO if exit command, exit return code 0
@@ -209,6 +208,7 @@ int exec_local_cmd_loop()
 
         else if (strcmp(cmd->_cmd_buffer, "rc") == 0){printf("%d\n", returnStatus);}
 
+        //if the user didn't enter anything do nothing
         else if (cmd_buff == NULL){;}
         else if (strcmp(cmd_buff, "") == 0){;}
         else if (cmd_buff == 0){;}
