@@ -4,7 +4,7 @@
 
 2. What happens if the fork() system call fails? How does your implementation handle this scenario?
 
-    > **Answer**:  The child process would return a failed exit code which would be printed.  As of this writing I haven't done the extra credit, which would handle that differently.
+    > **Answer**:  The child process would return a failed exit code which would be printed.  It exits the process, prints the error, and returns the error code (for rc to print).
 
 3. How does execvp() find the command to execute? What system environment variable plays a role in this process?
 

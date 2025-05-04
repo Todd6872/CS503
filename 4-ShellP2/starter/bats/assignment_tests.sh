@@ -97,15 +97,14 @@ EOF
 
 @test "It handles quoted spaces" {
     run "./dsh" <<EOF                
-   echo " hello     world     " 
+    echo " hello     world     " 
 EOF
 
     # Strip all whitespace (spaces, tabs, newlines) from the output
     stripped_output=$(echo "$output" | tr -d '\t\n\r\f\v')
 
     # Expected output with all whitespace removed for easier matching
-    #expected_output=" hello     world     dsh2> dsh2> cmd loop returned 0"
-    expected_output="dsh2>  hello     world     dsh2> cmd loop returned 0"
+    expected_output=" hello     world     dsh2> dsh2> cmd loop returned 0"
 
     # These echo commands will help with debugging and will only print
     #if the test fails

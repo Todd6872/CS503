@@ -61,6 +61,7 @@ int exec_local_cmd_loop()
     extern void print_dragon();
     //char *cmd_buff;
     int rc = 0;
+    int returnStatus = 0;
     cmd_buff_t *cmd = malloc(sizeof(cmd_buff_t));
 
     // TODO IMPLEMENT MAIN LOOP
@@ -89,66 +90,60 @@ int exec_local_cmd_loop()
         // remove the trailing \n from cmd_buff
         cmd_buff[strcspn(cmd_buff, "\n")] = '\0';
 
-    // TODO IMPLEMENT parsing input to cmd_buff_t *cmd_buff
+        // TODO IMPLEMENT parsing input to cmd_buff_t *cmd_buff
         rc = parse_cmd_buff(cmd_buff, cmd);
         
         
-    // TODO IMPLEMENT if built-in command, execute builtin logic for exit, cd (extra credit: dragon)
-    // the cd command should chdir to the provided directory; if no directory is provided, do nothing
-    // TODO if exit command, exit return code 0
-    if (strcmp(cmd->_cmd_buffer, EXIT_CMD) == 0)
-    {
-        free(cmd_buff);
-        free(cmd);
-        for (int k=0; k < 20; k++){free(argList[k]);}
-        free(argList);
-        return 0;
-    }
-
-    if (strcmp(cmd->_cmd_buffer, "dragon") == 0){void call_function();{print_dragon();}}
-
-    if (strcmp(cmd->_cmd_buffer, "pwd") == 0){printWorkingDir();}
-
-    if (strcmp(cmd->_cmd_buffer, "cd") == 0){rc = changeDir(cmd->argv);}
-
-    if (strcmp(cmd->_cmd_buffer, "echo") == 0)
-    {
-        int rc = parseArgs(argList, cmd);
-        //print args
-        for (int j=0; j < cmd->argc; j++){printf("%s\n", argList[j]);}
-        
-        if (rc == -1)
+        // TODO IMPLEMENT if built-in command, execute builtin logic for exit, cd (extra credit: dragon)
+        // the cd command should chdir to the provided directory; if no directory is provided, do nothing
+        // TODO if exit command, exit return code 0
+        if (strcmp(cmd->_cmd_buffer, EXIT_CMD) == 0)
         {
             free(cmd_buff);
             free(cmd);
             for (int k=0; k < 20; k++){free(argList[k]);}
             free(argList);
-            return -1;
+            return 0;
         }
-    }
-    
-    // TODO IMPLEMENT if not built-in command, fork/exec as an external command
-    // for example, if the user input is "ls -l", you would fork/exec the command "ls" with the arg "-l"
-    if (strcmp(cmd->_cmd_buffer, "uname") == 0)
-    {
-        struct utsname buffer;
-        errno = 0;
-        if (uname(&buffer) < 0)
+
+        else if (strcmp(cmd->_cmd_buffer, "dragon") == 0){void call_function();{print_dragon();}}
+
+        else if (strcmp(cmd->_cmd_buffer, "pwd") == 0){printWorkingDir();}
+
+        else if (strcmp(cmd->_cmd_buffer, "cd") == 0){rc = changeDir(cmd->argv);}
+
+        else if (strcmp(cmd->_cmd_buffer, "echo") == 0)
         {
-            perror("uname");
-            exit(EXIT_FAILURE);
-        }
             int rc = parseArgs(argList, cmd);
-            if (strcmp(argList[0], "-a") == 32)
+            //print args
+            for (int j=0; j < cmd->argc; j++){printf("%s\n", argList[j]);}
+            
+            if (rc == -1)
             {
-                char* arg = "-a";
-                rc = forkExec(cmd, arg);
-                //printf("%s ", buffer.version);
-                //printf("%s ", buffer.release);
-                //printf("%s ", buffer.sysname);
-                //printf("%s ", buffer.machine);
-                //printf("%s\n", buffer.nodename);
+                free(cmd_buff);
+                free(cmd);
+                for (int k=0; k < 20; k++){free(argList[k]);}
+                free(argList);
+                return -1;
             }
+        }
+    
+        // TODO IMPLEMENT if not built-in command, fork/exec as an external command
+        // for example, if the user input is "ls -l", you would fork/exec the command "ls" with the arg "-l"
+        else if (strcmp(cmd->_cmd_buffer, "uname") == 0)
+            {
+            
+                int rc = parseArgs(argList, cmd);
+                if (strcmp(argList[0], "-a") == 32)
+                {
+                    char* arg = "-a";
+                    rc = forkExec(cmd, arg);
+                    //printf("%s ", buffer.version);
+                    //printf("%s ", buffer.release);
+                    //printf("%s ", buffer.sysname);
+                    //printf("%s ", buffer.machine);
+                    //printf("%s\n", buffer.nodename);
+                }
             else
              {
                 char* arg = NULL;
@@ -160,57 +155,81 @@ int exec_local_cmd_loop()
              printf("domain name = %s\n", buffer.domainname);
             #endif
         
-    }
+            }
 
-    if (strcmp(cmd->_cmd_buffer, "ls") == 0)
-    {
-        int rc = parseArgs(argList, cmd);
-        if (strcmp(argList[0], "-l") == 32)
+        else if (strcmp(cmd->_cmd_buffer, "ls") == 0)
         {
-            char* arg = "-l";
-            rc = forkExec(cmd, arg);   
-            //rc = listDirDetailed();
+            int rc = parseArgs(argList, cmd);
+            if (strcmp(argList[0], "-l") == 32)
+            {
+                char* arg = "-l";
+                rc = forkExec(cmd, arg);   
+                //rc = listDirDetailed();
+            }
+            else 
+            {
+                char* arg = NULL;
+                rc = forkExec(cmd, arg);
+            };
+
+            if (rc == -1)
+            {
+                free(cmd_buff);
+                free(cmd);
+                for (int k=0; k < 20; k++){free(argList[k]);}
+                free(argList);
+                return -1;
+            }
         }
-        else 
+
+        else if (strcmp(cmd->_cmd_buffer, "which") == 0)
         {
+            int rc = parseArgs(argList, cmd);
+            if (strcmp(argList[0], "which") == 32)
+            {
+                char* arg = "which";
+                rc = forkExec(cmd, arg);   
+                //rc = listDirDetailed();
+            }
+            else 
+            {
+                char* arg = NULL;
+                rc = forkExec(cmd, arg);
+            };
+
+            if (rc == -1)
+            {
+                free(cmd_buff);
+                free(cmd);
+                for (int k=0; k < 20; k++){free(argList[k]);}
+                free(argList);
+                return -1;
+            }
+        }
+
+        else if (strcmp(cmd->_cmd_buffer, "rc") == 0){printf("%d\n", returnStatus);}
+
+        else if (cmd_buff == NULL){;}
+        else if (strcmp(cmd_buff, "") == 0){;}
+        else if (cmd_buff == 0){;}
+        
+        else
+        {
+            
             char* arg = NULL;
             rc = forkExec(cmd, arg);
-        };
-
-        if (rc == -1)
-        {
-            free(cmd_buff);
-            free(cmd);
-            for (int k=0; k < 20; k++){free(argList[k]);}
-            free(argList);
-            return -1;
+            returnStatus = rc;
+        
+            if (returnStatus == 1){printf("No such file or directory\n");}
+            if (returnStatus == 2){printf("Command not found in PATH\n");}
+            if (returnStatus == 5){printf("I/O error\n");}
+            if (returnStatus == 13){printf("Permission Denied\n");}
+            if (returnStatus == 20){printf("Not a Directory\n");}
+            if (returnStatus == 36){printf("File name too long\n");}
+            
         }
-    }
 
-    if (strcmp(cmd->_cmd_buffer, "which") == 0)
-    {
-        int rc = parseArgs(argList, cmd);
-        if (strcmp(argList[0], "which") == 32)
-        {
-            char* arg = "which";
-            rc = forkExec(cmd, arg);   
-            //rc = listDirDetailed();
-        }
-        else 
-        {
-            char* arg = NULL;
-            rc = forkExec(cmd, arg);
-        };
-
-        if (rc == -1)
-        {
-            free(cmd_buff);
-            free(cmd);
-            for (int k=0; k < 20; k++){free(argList[k]);}
-            free(argList);
-            return -1;
-        }
-    }
+    
 
 
     }
@@ -578,15 +597,18 @@ int forkExec(cmd_buff_t *cmd, char* arg)
     } else if (pid == 0) {
         // Run child process
         execvp(args[0], args);
-        
+
         // if execvp fails
-        perror("execvp"); 
-        exit(1);
+        exit(errno);
+        
     } else {
         // Parent process
         int status;
+        errno = 0;
         waitpid(pid, &status, 0); // Wait for the child process to finish
-        //printf("Child process finished with status %d\n", WEXITSTATUS(status));
+        
+        errno = WEXITSTATUS(status);
+        return errno;
     }
      
     return 0;
