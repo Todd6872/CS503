@@ -8,7 +8,7 @@
 
 3. How does execvp() find the command to execute? What system environment variable plays a role in this process?
 
-    > **Answer**:  It searches the path variable to look for the program name.  Path is a system environment paramter.
+    > **Answer**:  It searches the path variable to look for the program name.  Path is a system environment parameter.
 
 4. What is the purpose of calling wait() in the parent process after forking? What would happen if we didn’t call it?
 
@@ -30,11 +30,11 @@
 
 - What is the purpose of signals in a Linux system, and how do they differ from other forms of interprocess communication (IPC)?
 
-    > **Answer**:  Signals are a type of interupt used to send event triggers to a process.  They are sent as a type statusing and not used to move data (like pipes).
+    > **Answer**:  Signals are a type of interupt used to send event triggers to a process.  They are sent as a type of statusing and not used to move data (like pipes).
 
 - Find and describe three commonly used signals (e.g., SIGKILL, SIGTERM, SIGINT). What are their typical use cases?
 
-    > **Answer**:  SIGKILL: terminates a process immediately.  SIGTERM: requests that a process terminate; allows for a graceful shutdown.  SIGINT: like SIGTERM, but the request comes form the terminal cntrl-c.
+    > **Answer**:  SIGKILL: terminates a process immediately.  SIGTERM: requests that a process terminate; allows for a graceful shutdown.  SIGINT: like SIGTERM, but the request comes form the terminal (cntrl-c).
 
 - What happens when a process receives SIGSTOP? Can it be caught or ignored like SIGINT? Why or why not?
 
