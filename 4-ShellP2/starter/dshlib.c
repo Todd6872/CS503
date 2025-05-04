@@ -120,19 +120,6 @@ int exec_local_cmd_loop()
             char* arg = argList[0];
             rc = forkExec(cmd, arg);
             
-            //int rc = parseArgs(argList, cmd);
-            //print args
-            //for (int j=0; j < cmd->argc; j++){printf("%s", argList[j]);}
-            //printf("\n");
-            
-            //if (rc == -1)
-            //{
-            //    free(cmd_buff);
-            //    free(cmd);
-            //    for (int k=0; k < 20; k++){free(argList[k]);}
-            //   free(argList);
-            //   return -1;
-            //}
         }
         
         else if (strcmp(cmd->_cmd_buffer, "uname") == 0)
