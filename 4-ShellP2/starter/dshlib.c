@@ -111,24 +111,30 @@ int exec_local_cmd_loop()
 
         else if (strcmp(cmd->_cmd_buffer, "cd") == 0){rc = changeDir(cmd->argv);}
 
-        else if (strcmp(cmd->_cmd_buffer, "echo") == 0)
-        {
-            int rc = parseArgs(argList, cmd);
-            //print args
-            for (int j=0; j < cmd->argc; j++){printf("%s\n", argList[j]);}
-            
-            if (rc == -1)
-            {
-                free(cmd_buff);
-                free(cmd);
-                for (int k=0; k < 20; k++){free(argList[k]);}
-                free(argList);
-                return -1;
-            }
-        }
     
         // TODO IMPLEMENT if not built-in command, fork/exec as an external command
         // for example, if the user input is "ls -l", you would fork/exec the command "ls" with the arg "-l"
+        else if (strcmp(cmd->_cmd_buffer, "echo") == 0)
+        {
+            int rc = parseArgs(argList, cmd); 
+            char* arg = argList[0];
+            rc = forkExec(cmd, arg);
+            
+            //int rc = parseArgs(argList, cmd);
+            //print args
+            //for (int j=0; j < cmd->argc; j++){printf("%s", argList[j]);}
+            //printf("\n");
+            
+            //if (rc == -1)
+            //{
+            //    free(cmd_buff);
+            //    free(cmd);
+            //    for (int k=0; k < 20; k++){free(argList[k]);}
+            //   free(argList);
+            //   return -1;
+            //}
+        }
+        
         else if (strcmp(cmd->_cmd_buffer, "uname") == 0)
             {
             
@@ -137,22 +143,12 @@ int exec_local_cmd_loop()
                 {
                     char* arg = "-a";
                     rc = forkExec(cmd, arg);
-                    //printf("%s ", buffer.version);
-                    //printf("%s ", buffer.release);
-                    //printf("%s ", buffer.sysname);
-                    //printf("%s ", buffer.machine);
-                    //printf("%s\n", buffer.nodename);
                 }
             else
              {
                 char* arg = NULL;
                 rc = forkExec(cmd, arg);
-                //printf("%s\n", buffer.sysname);
              }
-
-            #ifdef _GNU_SOURCE
-             printf("domain name = %s\n", buffer.domainname);
-            #endif
         
             }
 
@@ -188,7 +184,6 @@ int exec_local_cmd_loop()
             {
                 char* arg = "which";
                 rc = forkExec(cmd, arg);   
-                //rc = listDirDetailed();
             }
             else 
             {
@@ -213,6 +208,7 @@ int exec_local_cmd_loop()
         else if (strcmp(cmd_buff, "") == 0){;}
         else if (cmd_buff == 0){;}
         
+        // unknown command processing
         else
         {
             
@@ -228,8 +224,6 @@ int exec_local_cmd_loop()
             if (returnStatus == 36){printf("File name too long\n");}
             
         }
-
-    
 
 
     }
@@ -248,8 +242,6 @@ int parse_cmd_buff(char *cmd_buff, cmd_buff_t *cmd)
     if (cmd_buff == NULL){return WARN_NO_CMDS;}
     if (strcmp(cmd_buff, "") == 0){return WARN_NO_CMDS;}
     if (cmd_buff == 0){return WARN_NO_CMDS;}
-
-    //printf("cmd buff: %d\n", cmd_buff[0]);
 
     int i = 0;
     int j = 0;

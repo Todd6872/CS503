@@ -97,7 +97,7 @@ EOF
 
 @test "It handles quoted spaces" {
     run "./dsh" <<EOF                
-    echo " hello     world     " 
+   echo " hello     world     " 
 EOF
 
     # Strip all whitespace (spaces, tabs, newlines) from the output
