@@ -1,20 +1,37 @@
 {
     "version": "2.0.0",
     "tasks": [
-      {
-        "label": "Build with Make",
-        "type": "shell",
-        "command": "make",
-        "group": {
-          "kind": "build",
-          "isDefault": true
+        {
+            "label": "Build with Make",
+            "type": "shell",
+            "command": "make",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${fileDirname}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Runs the 'make' command to build the project."
         },
-        "options": {
-          "cwd": "${fileDirname}"
-      },
-        "problemMatcher": ["$gcc"],
-        "detail": "Runs the 'make' command to build the project."
-      }
+        {
+            "label": "Build 5-ShellP3",
+            "type": "shell",
+            "command": "make",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/5-ShellP3/starter"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Runs the 'make' command to build the project."
+        }
     ]
-  }
-  
+}
