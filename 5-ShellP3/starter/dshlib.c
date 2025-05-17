@@ -88,7 +88,7 @@ int exec_local_cmd_loop()
 
            if (rc == OK)
            {
-                //printf(CMD_OK_HEADER, clist->num + 1);
+                
                 //loop through the commands and format the args; set flag as -1 if no args
                 for (int commandCount = 0; commandCount <= clist->num; commandCount++)
                {
@@ -96,39 +96,22 @@ int exec_local_cmd_loop()
                     else if (strcmp(clist->commands[commandCount]._cmd_buffer, "dragon") == 0){printDragon();}
                     else if (strcmp(clist->commands[commandCount]._cmd_buffer, "cd") == 0){rc = changeDir(cmd->argv);}
 
+                    //if the command has no args
                     else if (strcmp(clist->commands[commandCount].argv, blankString) == 0)
                     {
-                        //if the command is marked with the > operator move it to the next one
-                        // this is because the build command list function puts this flag on the left command rather than right
-                        // ex. cmd1 > file.txt; the > symbol is associated with cmd1.
-                        //if (clist->commands[commandCount].argc == 10 && moveRedirect == 1)
-                        //{
-                        //    clist->commands[commandCount + 1].argc = 10;
-                        //    moveRedirect = 0;
-                        //    clist->commands[commandCount].argc = 1;
-                        //}
+                        //set no-argument flag for pipe function
                         clist->commands[commandCount].argc *= -1;
                         runPipeline = 1;
                     }
                     
+                    //if the command has args
                     else if (strcmp(clist->commands[commandCount].argv, blankString) != 0)
                     {
-                        //if the command is marked with the > operator move it to the next one
-                        // this is because the build command list function puts this flag on the left command rather than right
-                        // ex. cmd1 > file.txt; the > symbol is associated with cmd1.
-                        //if (clist->commands[commandCount].argc == 10 && moveRedirect == 1)
-                        //{
-                        //    clist->commands[commandCount + 1].argc = 10;
-                        //    moveRedirect = 0;
-                        //    clist->commands[commandCount].argc = 1;
-                        //}
                         getArgs(cmd, clist, commandCount, argList);
                         runPipeline = 1;
                     }
                     else printf("\n");
 
-                    //rc = forkExec(clist, commandCount);
-                    //printError(rc);
                 }
 
                 if (runPipeline == 1)
@@ -168,6 +151,7 @@ int exec_local_cmd_loop()
             strcpy(clist->commands[commandCount]._cmd_buffer, "                   ");
             strcpy(clist->commands[commandCount].argv, "                   ");
         }
+        runPipeline = 0;
     }
     //free memory
     free(cmd_buff);
@@ -415,6 +399,7 @@ void stripLeadingZeros(char *string)
     free(temp);
 }
 
+//not used
 void printWorkingDir()
 {
     char cwd[100];
@@ -442,15 +427,13 @@ int parseArgs(char** argList, cmd_buff_t *cmd)
     int i=0;
     int argCpyLength;
     
-    //append a space to the end so search works
-    //strcat(cmd->argv, " ");
     
     //copy cmd->argv to argCpy
     strcpy(argCpy, cmd->argv);
     formatString(argCpy);
 
+    //append a space to the end so search works
     strcat(argCpy, " ");
-    //printf("strlen argCpy: %d\n", strlen(argCpy));
 
     argCpyLength = strlen(argCpy);
 
