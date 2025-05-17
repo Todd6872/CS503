@@ -640,7 +640,6 @@ int execute_pipeline(command_list_t *clist)
     int num_commands = clist->num + 1;
     // if > character is found reduce the number of commands by one (so it doesn't try to execute the filename)
     if (clist->commands[0].argc <= -10 || clist->commands[0].argc >= 10){num_commands = clist->num;}
-    //printf("num commands: %d\n", num_commands);
     
     int pipes[num_commands - 1][2];  // Array of pipes
     pid_t pids[num_commands];        // Array to store process IDs
