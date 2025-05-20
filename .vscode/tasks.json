@@ -32,6 +32,22 @@
                 "$gcc"
             ],
             "detail": "Runs the 'make' command to build the project."
+        },
+        {
+            "label": "Build 6-RShell",
+            "type": "shell",
+            "command": "make",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "options": {
+                "cwd": "${workspaceFolder}/6-RShell/starter"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Runs the 'make' command to build the project."
         }
     ]
 }
