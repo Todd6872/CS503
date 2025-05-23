@@ -132,8 +132,6 @@ int exec_local_cmd_loop()
                     waitpid(supervisor, NULL, 0);
                 }
                 
-
-                
             }
 
             if (rc == WARN_NO_CMDS){
@@ -420,6 +418,7 @@ int changeDir(char* newDirectory)
 //parses multple args inlcuding anything in quotes
 int parseArgs(char** argList, cmd_buff_t *cmd)
 {
+    
     char* argCpy = malloc(sizeof(char) * 50);
     char* temp = malloc(sizeof(char) * 50);
     
@@ -436,21 +435,21 @@ int parseArgs(char** argList, cmd_buff_t *cmd)
     strcat(argCpy, " ");
 
     argCpyLength = strlen(argCpy);
-
+    
     //clear cmd->argv
     for (int k=0; k < strlen(cmd->argv); k++){cmd->argv[k] = SPACE_CHAR;}
-
+    
     //begin parse
     while (argCpyLength > 0)
     {
         //clear cmd->argv
         strcpy(cmd->argv, "                                                  ");
         formatString(cmd->argv);
-
+        
         //find first space or quote
         i=0;
         while (argCpy[i] != 32 && argCpy[i] != 34){i++;}
-
+        
         //if the first thing we find is a space capture that arg to argv
         if (argCpy[i] == SPACE_CHAR){
             strncpy(cmd->argv, argCpy, i);
@@ -492,7 +491,7 @@ int parseArgs(char** argList, cmd_buff_t *cmd)
         argCount++;
         
     }
-
+    
     cmd->argc = argCount;
 
     //free mallocs
@@ -651,20 +650,19 @@ int execute_pipeline(command_list_t *clist)
             //if the redirect indicator is present create a file with the command name
             if (clist->commands[i].argc <= -10 || clist->commands[i].argc >= 10)
             {
-                //printf("argc%d\n", clist->commands[i].argc);
                 char* filename = clist->commands[i + 1]._cmd_buffer;
-                //printf("cmd buffer[%d]: %s\n", i, clist->commands[i]._cmd_buffer);
-                //printf("filename: %s\n", filename);
                 int out = 0;
+                //if >>
                 if (clist->commands[i].argc == 20 || clist->commands[i].argc == -20)
                 {
                     out = open(filename, O_RDWR|O_CREAT|O_APPEND, 0600);
                 }
+                //if >
                 else if (clist->commands[i].argc == 10 || clist->commands[i].argc == -10)
                 {
                     out = open(filename, O_RDWR|O_CREAT|O_TRUNC, 0600);
                 }
-                
+                //if error
                 if (-1 == out) 
                 {
                     perror("opening:"); 
@@ -672,7 +670,6 @@ int execute_pipeline(command_list_t *clist)
                     return 255; 
                 }
         
-                
                 int save_out = dup(fileno(stdout));
                 if (-1 == dup2(out, fileno(stdout))) { perror("cannot redirect stdout"); return 255; }
 

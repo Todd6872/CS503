@@ -50,7 +50,7 @@ static int is_threaded_server = false;
 int start_server(char *ifaces, int port, int is_threaded){
     int svr_socket;
     int rc;
-
+    
     //
     //TODO:  If you are implementing the extra credit, please add logic
     //       to keep track of is_threaded to handle this feature
@@ -62,8 +62,9 @@ int start_server(char *ifaces, int port, int is_threaded){
         int err_code = svr_socket;  //server socket will carry error code
         return err_code;
     }
-
+    
     rc = process_cli_requests(svr_socket);
+    
 
     stop_server(svr_socket);
 
@@ -216,11 +217,12 @@ int process_cli_requests(int svr_socket){
             perror("accept");
             return ERR_RDSH_COMMUNICATION;
         }
-
+        
         //we only need the exec_client_requests if we are not doing
         //the extra credit
         if(is_threaded_server == false){
             rc = exec_client_requests(cli_socket);
+            
             if (rc < 0){
                 break;
             }
@@ -327,14 +329,20 @@ void *handle_client(void *arg) {
 */
 
 int exec_client_requests(int cli_socket) {
-    int io_size;
+    
     //command_list_t cmd_list;
-    command_list_t *cmd_list = malloc(sizeof(command_list_t));
+    //command_list_t *cmd_list = malloc(sizeof(command_list_t));
+    int io_size;
     int rc;
     int cmd_rc;
     int last_rc;
     char *io_buff;
     cmd_buff_t *cmd = malloc(sizeof(cmd_buff_t));
+    command_list_t *clist = malloc(sizeof(command_list_t));
+    char** argList = malloc(sizeof(argList) * 20);
+    for (int k=0; k < 20; k++){argList[k] = malloc(sizeof(char) * 50);}
+    char blankString[20] = "";
+    int runPipeline = 1;
 
     io_buff = malloc(RDSH_COMM_BUFF_SZ);
     if (io_buff == NULL){
@@ -342,6 +350,7 @@ int exec_client_requests(int cli_socket) {
     }
 
     while(1) {
+        runPipeline = 1;
         //clear buffers
         memset(io_buff, 0, RDSH_COMM_BUFF_SZ);
         // TODO use recv() syscall to get input
@@ -360,8 +369,33 @@ int exec_client_requests(int cli_socket) {
         }
 
         // TODO build up a cmd_list
-        rc = build_cmd_list((char *)io_buff, cmd_list, cmd);
-        //rc = build_cmd_list((char *)io_buff, &cmd_list);
+        rc = build_cmd_list((char *)io_buff, clist, cmd);
+        for (int commandCount = 0; commandCount <= clist->num; commandCount++)
+               {
+                    if (strcmp(clist->commands[commandCount]._cmd_buffer, "cd") == 0)
+                    {
+                        changeDir(clist->commands[commandCount].argv);
+                        runPipeline = 0;
+                    }
+                    //if the command has no args
+                    else if (strcmp(clist->commands[commandCount].argv, blankString) == 0)
+                    {
+                        //set no-argument flag for pipe function
+                        clist->commands[commandCount].argc *= -1;
+                    }
+                    
+                    //if the command has args
+                    else if (strcmp(clist->commands[commandCount].argv, blankString) != 0)
+                    {
+                        getArgs(cmd, clist, commandCount, argList);
+                    }
+                    else printf("\n");
+
+                }
+        
+        //int commandCount = cmd_list->num;
+        //getArgs(cmd, cmd_list, commandCount, argList);
+        
         switch (rc) {
             case ERR_MEMORY:
                 sprintf((char *)io_buff, CMD_ERR_RDSH_ITRNL, ERR_MEMORY);
@@ -381,8 +415,9 @@ int exec_client_requests(int cli_socket) {
 
         // TODO rsh_execute_pipeline to run your cmd_list
         last_rc = cmd_rc;
-        cmd_rc = rsh_execute_pipeline(cli_socket, &cmd_list);
-
+        
+        if (runPipeline){cmd_rc = rsh_execute_pipeline(cli_socket, clist);}
+        
         
         // TODO send appropriate respones with send_message_string
         // - error constants for failures
@@ -520,13 +555,28 @@ int send_message_string(int cli_socket, char *buff){
  *                  macro that we discussed during our fork/exec lecture to
  *                  get this value. 
  */
-int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
+int rsh_execute_pipeline(int cli_sock, command_list_t *clist) 
+{
+    clist->num += 1;
+    // if > character is found reduce the number of commands by one (so it doesn't try to execute the filename)
+    if (clist->commands[0].argc <= -10 || clist->commands[0].argc >= 10){clist->num -= 1;}
+
+    printf("execute pipeline\n");
+    printf("cmd list->num: %d\n", clist->num);
+    printf("cmd commands-> [0]: %s\n", clist->commands[0]._cmd_buffer);
+    printf("cmd args-> [0]: %s\n", clist->commands[0].argv);
+    //printf("clist output file: %s\n", clist->commands[0].output_file);
+    //printf("clist input file: %s\n", clist->commands[0].input_file);
+    //printf("cli socket: %d\n", cli_sock);
+
     int pipes[clist->num - 1][2];  // Array of pipes
     pid_t pids[clist->num];
     int  pids_st[clist->num];         // Array to store process IDs
     Built_In_Cmds bi_cmd;
     int exit_code;
+    int runExec = 1;
 
+    
     // Create all necessary pipes
     for (int i = 0; i < clist->num - 1; i++)
      {
@@ -550,102 +600,125 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
             // Child process
             if (pids[i] == 0) 
             {  
-            // For first command in pipeline, read from socket unless input redirected
-            if (i == 0 && !clist->commands[i].input_file) 
-            {
-                dup2(cli_sock, STDIN_FILENO);
-            }
+                runExec = 1;
 
-            // For last command in pipeline, write to socket unless output redirected
-            if (i == clist->num - 1 && !clist->commands[i].output_file)
-            {
-                dup2(cli_sock, STDOUT_FILENO);
-                dup2(cli_sock, STDERR_FILENO);  // Also redirect stderr to socket
-            }
-
-            /* extra credit */
-            // Handle input redirection
-            if (clist->commands[i].input_file) 
-            {
-                int in_fd = open(clist->commands[i].input_file, O_RDONLY);
-                if (in_fd < 0) 
+                //if a redirect open the file as destination
+                if (clist->commands[i].argc <= -10 || clist->commands[i].argc >= 10)
                 {
-                    perror("open input file");
-                    exit(EXIT_FAILURE);
-                }
-                dup2(in_fd, STDIN_FILENO);
-                close(in_fd);
-            }
-
-            // Handle output redirection
-            if (clist->commands[i].output_file) 
-            {
-                int flags = O_WRONLY | O_CREAT;
-                mode_t mode = 0644;
+                    char* filename = clist->commands[i + 1]._cmd_buffer;
+                    int out = 0;
+                    // if >>
+                    if (clist->commands[i].argc == 20 || clist->commands[i].argc == -20)
+                    {
+                        out = open(filename, O_RDWR|O_CREAT|O_APPEND, 0600);
+                    }
+                    //if >
+                    else if (clist->commands[i].argc == 10 || clist->commands[i].argc == -10)
+                    {
+                        out = open(filename, O_RDWR|O_CREAT|O_TRUNC, 0600);
+                    }
+                    //if error
+                    if (-1 == out) 
+                    {
+                        perror("opening:"); 
+                        printf("%s\n", filename);
+                        return 255; 
+                    }
             
-                if (clist->commands[i].append_mode) 
-                {
-                    flags |= O_APPEND; // Append mode
-                } else 
-                {
-                    flags |= O_TRUNC;  // Truncate mode
+                    int save_out = dup(fileno(stdout));
+                    if (-1 == dup2(out, fileno(stdout))) { perror("cannot redirect stdout"); return 255; }
+
+                    // Execute command if no arguments
+                    if (clist->commands[i].argc < 0)
+                    {
+                        char *args[] = {clist->commands[i]._cmd_buffer, NULL, NULL};
+                        execvp(args[0], args);
+                        perror("execvp");
+                        exit(EXIT_FAILURE);
+                    }
+                    
+                    // Execute command with arguments
+                    else if (clist->commands[i].argc > 0)
+                    {
+                        char *args[] = {clist->commands[i]._cmd_buffer, clist->commands[i].argv, NULL};
+                        execvp(args[0], args);
+                        perror("execvp");
+                        exit(EXIT_FAILURE);
+                    }
+
+                    fflush(stdout); close(out);
+
+                    dup2(save_out, fileno(stdout));
+
+                    close(save_out);
+
                 }
-            
-                int out_fd = open(clist->commands[i].output_file, flags, mode);
-                if (out_fd < 0) 
+
+                // if not a redirect create pipes as usual
+                if (clist->commands[i].argc == -1 || clist->commands[i].argc == 1)
                 {
-                    perror("open output file");
-                    exit(EXIT_FAILURE);
+                    // For first command in pipeline, read from socket unless input redirected
+                    if (i == 0 && !clist->commands[i].input_file) {dup2(cli_sock, STDIN_FILENO);}
+
+                    // For last command in pipeline, write to socket unless output redirected
+                    if (i == clist->num - 1 && !clist->commands[i].output_file)
+                    {
+                        dup2(cli_sock, STDOUT_FILENO);
+                        dup2(cli_sock, STDERR_FILENO);  // Also redirect stderr to socket
+                    }
+                    
+                    // Set up input pipe for all except first process
+                    if (i > 0) {dup2(pipes[i-1][0], STDIN_FILENO);}
+
+                    // Set up output pipe for all except last process
+                    if (i < clist->num - 1) {dup2(pipes[i][1], STDOUT_FILENO);}
+
+                    // Close all pipe ends in child
+                    for (int j = 0; j < clist->num - 1; j++) 
+                    {
+                        close(pipes[j][0]);
+                        close(pipes[j][1]);
+                    }
+
+                    //if a local command execute but don't run execvp
+                    if (strcmp(clist->commands[i]._cmd_buffer, "dragon") == 0)
+                    {
+                        printDragon();
+                        runExec = 0;
+                        exit(EXIT_FAILURE);
+                    }
+                    
+                    if (strcmp(clist->commands[i]._cmd_buffer, "exit") == 0)
+                    {
+                        runExec = 0;
+                        exit(EXIT_FAILURE);
+                    }
+                    
+                    //if not a local command run execvp
+                    if (runExec)
+                    {
+                        // Execute command if no arguments
+                        if (clist->commands[i].argc < 0)
+                        {
+                            char *args[] = {clist->commands[i]._cmd_buffer, NULL, NULL};
+                            execvp(args[0], args);
+                            perror("execvp");
+                            exit(EXIT_FAILURE);
+                        }
+                        
+                        // Execute command with arguments
+                        else if (clist->commands[i].argc > 0)
+                        {
+                            char *args[] = {clist->commands[i]._cmd_buffer, clist->commands[i].argv, NULL};
+                            execvp(args[0], args);
+                            perror("execvp");
+                            exit(EXIT_FAILURE);
+                        }
+                    }
+                    
                 }
-                dup2(out_fd, STDOUT_FILENO);
-                close(out_fd);
+                
             }
-             /* end extra credit */
-
-
-            // Set up input pipe for all except first process
-            if (i > 0) 
-            {
-                dup2(pipes[i-1][0], STDIN_FILENO);
-            }
-
-            // Set up output pipe for all except last process
-            if (i < clist->num - 1) 
-            {
-                dup2(pipes[i][1], STDOUT_FILENO);
-            }
-
-            // Close all pipe ends in child
-            for (int j = 0; j < clist->num - 1; j++) 
-            {
-                close(pipes[j][0]);
-                close(pipes[j][1]);
-            }
-
-            //See if built in
-            bi_cmd = rsh_built_in_cmd(&(clist->commands[i]));
-            if (bi_cmd == BI_CMD_RC)
-            {
-                exit(RC_SC);
-            }
-            if (bi_cmd == BI_CMD_EXIT) 
-            {
-                exit(EXIT_SC);
-            }
-            if (bi_cmd == BI_CMD_STOP_SVR)
-            {
-                exit(STOP_SERVER_SC);
-            }
-            if (bi_cmd == BI_EXECUTED)
-            {
-                exit(0); // done get next command
-            }
-
-            // Execute command
-            execvp(clist->commands[i].argv[0], clist->commands[i].argv);
-            perror("execvp");
-            exit(EXIT_FAILURE);
-        }
     }
 
 
