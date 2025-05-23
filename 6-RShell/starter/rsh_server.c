@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/un.h>
 #include <fcntl.h>
+#include <pthread.h>
 
 //INCLUDES for extra credit
 //#include <signal.h>
@@ -220,17 +221,26 @@ int process_cli_requests(int svr_socket){
         
         //we only need the exec_client_requests if we are not doing
         //the extra credit
-        if(is_threaded_server == false){
+        if(is_threaded_server == false)
+        {
             rc = exec_client_requests(cli_socket);
             
-            if (rc < 0){
+            //if stop-server request stop program with rc = 0
+            if (rc = -10)
+            {
+                rc = 0;
                 break;
             }
-        } else {
+            if (rc < 0){break;}
+        } else 
+        {
             //rc = exec_client_thread(svr_socket, cli_socket);
-            if (rc < 0){
+            if (rc = -10)
+            {
+                rc = 0;
                 break;
             }
+            if (rc < 0){break;}
         }
     }
 
@@ -280,7 +290,7 @@ int process_cli_requests(int svr_socket){
  *                or receive errors. 
  */
 
- /*
+ 
  //_________________
  //extra credit threaded handler
 typedef struct thread_info{
@@ -290,7 +300,7 @@ typedef struct thread_info{
 
 int exec_client_thread(int main_socket, int cli_socket) {
     thread_info_t *tinfo = malloc(sizeof(thread_info_t));
-    pthread_t     thread_id;
+    pthread_t thread_id;
 
     tinfo->server_socket = main_socket;
     tinfo->client_socket = cli_socket;
@@ -326,7 +336,7 @@ void *handle_client(void *arg) {
     }
 }
 //______________________
-*/
+
 
 int exec_client_requests(int cli_socket) {
     
@@ -378,6 +388,16 @@ int exec_client_requests(int cli_socket) {
                         runPipeline = 0;
                     }
                     //if the command has no args
+                    if (strcmp(clist->commands[commandCount]._cmd_buffer, "stop-server") == 0)
+                    {
+                        free(io_buff);
+                        close(cli_socket);
+                        free(cmd);
+                        for (int k=0; k < 20; k++){free(argList[k]);}
+                        free(argList);
+                        free(clist);
+                        return -10;
+                    }
                     else if (strcmp(clist->commands[commandCount].argv, blankString) == 0)
                     {
                         //set no-argument flag for pipe function
@@ -393,10 +413,8 @@ int exec_client_requests(int cli_socket) {
 
                 }
         
-        //int commandCount = cmd_list->num;
-        //getArgs(cmd, cmd_list, commandCount, argList);
-        
-        switch (rc) {
+        switch (rc) 
+        {
             case ERR_MEMORY:
                 sprintf((char *)io_buff, CMD_ERR_RDSH_ITRNL, ERR_MEMORY);
                 send_message_string(cli_socket, (char *)io_buff);
@@ -457,6 +475,10 @@ int exec_client_requests(int cli_socket) {
 
     free(io_buff);
     close(cli_socket);
+    free(cmd);
+    for (int k=0; k < 20; k++){free(argList[k]);}
+    free(argList);
+    free(clist);
     return OK;
 }
 
@@ -561,10 +583,10 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist)
     // if > character is found reduce the number of commands by one (so it doesn't try to execute the filename)
     if (clist->commands[0].argc <= -10 || clist->commands[0].argc >= 10){clist->num -= 1;}
 
-    printf("execute pipeline\n");
-    printf("cmd list->num: %d\n", clist->num);
-    printf("cmd commands-> [0]: %s\n", clist->commands[0]._cmd_buffer);
-    printf("cmd args-> [0]: %s\n", clist->commands[0].argv);
+    //printf("execute pipeline\n");
+    //printf("cmd list->num: %d\n", clist->num);
+    //printf("cmd commands-> [0]: %s\n", clist->commands[0]._cmd_buffer);
+    //printf("cmd args-> [0]: %s\n", clist->commands[0].argv);
     //printf("clist output file: %s\n", clist->commands[0].output_file);
     //printf("clist input file: %s\n", clist->commands[0].input_file);
     //printf("cli socket: %d\n", cli_sock);
@@ -780,7 +802,9 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist)
  * 
  *      BI_NOT_BI:  If the command is not "built-in" the BI_NOT_BI value is
  *                  returned. 
- */
+ 
+
+ 
 Built_In_Cmds rsh_match_command(const char *input)
 {
     if (strcmp(input, "exit") == 0)
@@ -796,7 +820,7 @@ Built_In_Cmds rsh_match_command(const char *input)
     return BI_NOT_BI;
 }
 
-/*
+
  * rsh_built_in_cmd(cmd_buff_t *cmd)
  *      cmd:  The cmd_buff_t of the command, remember, this is the 
  *            parsed version fo the command
@@ -827,7 +851,7 @@ Built_In_Cmds rsh_match_command(const char *input)
  * 
  *   AGAIN - THIS IS TOTALLY OPTIONAL IF YOU HAVE OR WANT TO HANDLE BUILT-IN
  *   COMMANDS DIFFERENTLY. 
- */
+ 
 Built_In_Cmds rsh_built_in_cmd(cmd_buff_t *cmd)
 {
     Built_In_Cmds ctype = BI_NOT_BI;
@@ -851,3 +875,4 @@ Built_In_Cmds rsh_built_in_cmd(cmd_buff_t *cmd)
         return BI_NOT_BI;
     }
 }
+*/
