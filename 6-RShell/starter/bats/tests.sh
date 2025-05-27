@@ -22,17 +22,89 @@ assert_output_contains() {
     fi
 }
 
-@test "Pipes" {
-    run "./dsh" <<EOF                
-ls | grep dshlib.c
+
+@test "Client-Server Pipes" {
+    run ./dsh -s -i 0.0.0.0 -p 7890 &
+    sleep 1 &
+    sleep 1 &
+    sleep 1 &
+    run ./dsh -c -i 0.0.0.0 -p 7890 <<EOF              
+ls -l | grep dshlib.c
 EOF
 
     # Verify key elements in the output
-    assert_output_contains "dshlib.c"
+    assert_output_contains "-rw------- 1 st9324vd domain users 23486 May 23 14:14 dshlib.c"
     assert_output_contains "cmd loop returned 0"
     
     # Verify the command executed successfully
     [ "$status" -eq 0 ]
 }
 
+@test "Client-Server uname" {
+    run ./dsh -s -i 0.0.0.0 -p 7890 &
+    sleep 1 &
+    sleep 1 &
+    sleep 1 &
+    run ./dsh -c -i 0.0.0.0 -p 7890 <<EOF              
+uname -a
+EOF
+
+    # Verify key elements in the output
+    assert_output_contains "Linux tux3 5.15.0-134-generic #145-Ubuntu SMP Wed Feb 12 20:08:39 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux"
+    assert_output_contains "cmd loop returned 0"
+    
+    # Verify the command executed successfully
+    [ "$status" -eq 0 ]
+}
+
+@test "Client-Server Echo" {
+    run ./dsh -s -i 0.0.0.0 -p 7890 &
+    sleep 1 &
+    sleep 1 &
+    sleep 1 &
+    run ./dsh -c -i 0.0.0.0 -p 7890 <<EOF              
+echo " hello     world     "
+EOF
+
+    # Verify key elements in the output
+    assert_output_contains " hello     world     "
+    assert_output_contains "cmd loop returned 0"
+    
+    # Verify the command executed successfully
+    [ "$status" -eq 0 ]
+}
+
+@test "Client-Server Which which ... which?" {
+    run ./dsh -s -i 0.0.0.0 -p 7890 &
+    sleep 1 &
+    sleep 1 &
+    sleep 1 &
+    run ./dsh -c -i 0.0.0.0 -p 7890 <<EOF                
+which which
+EOF
+
+    # Strip all whitespace (spaces, tabs, newlines) from the output
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+
+    # Expected output with all whitespace removed for easier matching
+    assert_output_contains "/usr/bin/which"
+    assert_output_contains "cmd loop returned 0"
+
+     # Verify the command executed successfully
+    [ "$status" -eq 0 ]
+
+}
+
+@test "Local-Command Pipes" {
+    run "./dsh" <<EOF            
+ls -l | grep dshlib.c
+EOF
+
+    # Verify key elements in the output
+    assert_output_contains "-rw------- 1 st9324vd domain users 23486 May 23 14:14 dshlib.c"
+    assert_output_contains "cmd loop returned 0"
+    
+    # Verify the command executed successfully
+    [ "$status" -eq 0 ]
+}
 

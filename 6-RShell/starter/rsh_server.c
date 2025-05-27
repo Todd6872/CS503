@@ -232,16 +232,16 @@ int process_cli_requests(int svr_socket){
                 break;
             }
             if (rc < 0){break;}
-        } else 
-        {
+        } //else 
+       // {
             //rc = exec_client_thread(svr_socket, cli_socket);
-            if (rc = -10)
-            {
-                rc = 0;
-                break;
-            }
-            if (rc < 0){break;}
-        }
+       //     if (rc = -10)
+       //     {
+       //         rc = 0;
+       //         break;
+       //     }
+       //     if (rc < 0){break;}
+       // }
     }
 
     stop_server(cli_socket);
@@ -375,11 +375,31 @@ int exec_client_requests(int cli_socket) {
         //client terminated gracefully if I receive zero bytes
         if (io_size == 0){
             printf(RCMD_MSG_CLIENT_EXITED);
+            //return 0;
             break;      //leave loop, close connection
         }
 
         // TODO build up a cmd_list
         rc = build_cmd_list((char *)io_buff, clist, cmd);
+
+        switch (rc) 
+        {
+            case ERR_MEMORY:
+                sprintf((char *)io_buff, CMD_ERR_RDSH_ITRNL, ERR_MEMORY);
+                send_message_string(cli_socket, (char *)io_buff);
+                continue;
+            case WARN_NO_CMDS:
+                sprintf((char *)io_buff, CMD_ERR_RDSH_ITRNL, WARN_NO_CMDS);
+                //send_message_string(cli_socket, (char *)io_buff);
+                continue;
+            case ERR_CMD_OR_ARGS_TOO_BIG:
+                sprintf((char *)io_buff, CMD_ERR_PIPE_LIMIT, CMD_MAX);
+                send_message_string(cli_socket, (char *)io_buff);
+                continue;
+            default:
+                break;
+        }
+
         for (int commandCount = 0; commandCount <= clist->num; commandCount++)
                {
                     if (strcmp(clist->commands[commandCount]._cmd_buffer, "cd") == 0)
@@ -387,8 +407,8 @@ int exec_client_requests(int cli_socket) {
                         changeDir(clist->commands[commandCount].argv);
                         runPipeline = 0;
                     }
-                    //if the command has no args
-                    if (strcmp(clist->commands[commandCount]._cmd_buffer, "stop-server") == 0)
+                    
+                    else if (strcmp(clist->commands[commandCount]._cmd_buffer, "stop-server") == 0)
                     {
                         free(io_buff);
                         close(cli_socket);
@@ -398,6 +418,8 @@ int exec_client_requests(int cli_socket) {
                         free(clist);
                         return -10;
                     }
+
+                    //if the command has no args
                     else if (strcmp(clist->commands[commandCount].argv, blankString) == 0)
                     {
                         //set no-argument flag for pipe function
@@ -409,33 +431,19 @@ int exec_client_requests(int cli_socket) {
                     {
                         getArgs(cmd, clist, commandCount, argList);
                     }
-                    else printf("\n");
+                    else 
+                    runPipeline = 1;
+                    printf("\n");
 
                 }
         
-        switch (rc) 
-        {
-            case ERR_MEMORY:
-                sprintf((char *)io_buff, CMD_ERR_RDSH_ITRNL, ERR_MEMORY);
-                send_message_string(cli_socket, (char *)io_buff);
-                continue;
-            case WARN_NO_CMDS:
-                sprintf((char *)io_buff, CMD_ERR_RDSH_ITRNL, WARN_NO_CMDS);
-                send_message_string(cli_socket, (char *)io_buff);
-                continue;
-            case ERR_CMD_OR_ARGS_TOO_BIG:
-                sprintf((char *)io_buff, CMD_ERR_PIPE_LIMIT, CMD_MAX);
-                send_message_string(cli_socket, (char *)io_buff);
-                continue;
-            default:
-                break;
-        }
 
+        
         // TODO rsh_execute_pipeline to run your cmd_list
         last_rc = cmd_rc;
         
         if (runPipeline){cmd_rc = rsh_execute_pipeline(cli_socket, clist);}
-        
+        //printf("cmd rc: %d\n", cmd_rc);
         
         // TODO send appropriate respones with send_message_string
         // - error constants for failures

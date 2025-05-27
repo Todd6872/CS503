@@ -1,2 +1,11 @@
-hello world
-hello world
+total 145
+drwx--x--x 2 st9324vd domain users     1 May 19 20:36 bats
+-rwx--x--x 1 st9324vd domain users 68648 May 26 10:26 dsh
+-rw------- 1 st9324vd domain users  4634 May 19 20:36 dsh_cli.c
+-rw------- 1 st9324vd domain users 23486 May 23 14:14 dshlib.c
+-rw------- 1 st9324vd domain users  3067 May 19 20:58 dshlib.h
+-rw------- 1 st9324vd domain users   619 May 19 20:36 makefile
+-rw------- 1 st9324vd domain users 10308 May 20 20:45 rsh_cli.c
+-rw------- 1 st9324vd domain users  3552 May 19 20:36 rshlib.h
+-rw------- 1 st9324vd domain users 32100 May 25 12:38 rsh_server.c
+-rw------- 1 st9324vd domain users     0 May 26 10:29 testfile.txt
