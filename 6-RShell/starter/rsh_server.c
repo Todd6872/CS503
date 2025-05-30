@@ -219,8 +219,7 @@ int process_cli_requests(int svr_socket){
             return ERR_RDSH_COMMUNICATION;
         }
         
-        //we only need the exec_client_requests if we are not doing
-        //the extra credit
+        // Process single threaded
         if(is_threaded_server == false)
         {
             rc = exec_client_requests(cli_socket);
@@ -232,16 +231,17 @@ int process_cli_requests(int svr_socket){
                 break;
             }
             if (rc < 0){break;}
-        } //else 
-       // {
-            //rc = exec_client_thread(svr_socket, cli_socket);
-       //     if (rc = -10)
-       //     {
-       //         rc = 0;
-       //         break;
-       //     }
-       //     if (rc < 0){break;}
-       // }
+        } else 
+        {
+            rc = exec_client_thread(svr_socket, cli_socket);
+            //if stop-server request stop program with rc = 0
+            if (rc = -10)
+            {
+                rc = 0;
+                break;
+            }
+            if (rc < 0){break;}
+        }
     }
 
     stop_server(cli_socket);
@@ -305,14 +305,16 @@ int exec_client_thread(int main_socket, int cli_socket) {
     tinfo->server_socket = main_socket;
     tinfo->client_socket = cli_socket;
 
+    
+
     if (pthread_create(&thread_id, NULL, handle_client, (void *)tinfo) < 0) {
         perror("could not create thread");
         close(tinfo->client_socket);
         free(tinfo);
         return OK;
     }
-
-    // Detach thread
+    
+    // Detach thread - resources releaased after running
     pthread_detach(thread_id);
 
     return OK;
@@ -325,10 +327,12 @@ void *handle_client(void *arg) {
     //handles client requests in loop.
     rc = exec_client_requests(tinfo->client_socket);
     if (rc == OK){
+        
         free(tinfo);        //was malloc'd
         //just return since this is a detached thread handler
         return NULL;
     } else {
+        
         //unexpected error, force the overall process to close
         close(tinfo->server_socket);
         free(tinfo);        //was malloc'd
@@ -339,6 +343,7 @@ void *handle_client(void *arg) {
 
 
 int exec_client_requests(int cli_socket) {
+    
     
     //command_list_t cmd_list;
     //command_list_t *cmd_list = malloc(sizeof(command_list_t));
@@ -353,25 +358,31 @@ int exec_client_requests(int cli_socket) {
     for (int k=0; k < 20; k++){argList[k] = malloc(sizeof(char) * 50);}
     char blankString[20] = "";
     int runPipeline = 1;
-
+    
     io_buff = malloc(RDSH_COMM_BUFF_SZ);
     if (io_buff == NULL){
         return ERR_RDSH_SERVER;
     }
-
+    
     while(1) {
+        
         runPipeline = 1;
         //clear buffers
+        
+        //for (int k=0; k < sizeof(io_buff); k++){io_buff[k] = '0';}
         memset(io_buff, 0, RDSH_COMM_BUFF_SZ);
         // TODO use recv() syscall to get input
+
         io_size = recv(cli_socket, io_buff, RDSH_COMM_BUFF_SZ, 0);
+        
+        //printf("io_size: %d\n", io_size);
         if (io_size == -1){
             perror("recv");
             free(io_buff);
             close(cli_socket);
             return ERR_RDSH_COMMUNICATION;
         }
-
+        
         //client terminated gracefully if I receive zero bytes
         if (io_size == 0){
             printf(RCMD_MSG_CLIENT_EXITED);
@@ -379,9 +390,10 @@ int exec_client_requests(int cli_socket) {
             break;      //leave loop, close connection
         }
 
+
         // TODO build up a cmd_list
         rc = build_cmd_list((char *)io_buff, clist, cmd);
-
+        
         switch (rc) 
         {
             case ERR_MEMORY:
@@ -437,12 +449,13 @@ int exec_client_requests(int cli_socket) {
 
                 }
         
-
+        
         
         // TODO rsh_execute_pipeline to run your cmd_list
         last_rc = cmd_rc;
         
         if (runPipeline){cmd_rc = rsh_execute_pipeline(cli_socket, clist);}
+        
         //printf("cmd rc: %d\n", cmd_rc);
         
         // TODO send appropriate respones with send_message_string

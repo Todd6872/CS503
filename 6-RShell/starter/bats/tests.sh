@@ -50,7 +50,7 @@ uname -a
 EOF
 
     # Verify key elements in the output
-    assert_output_contains "Linux tux3 5.15.0-134-generic #145-Ubuntu SMP Wed Feb 12 20:08:39 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux"
+    assert_output_contains "Linux"
     assert_output_contains "cmd loop returned 0"
     
     # Verify the command executed successfully
