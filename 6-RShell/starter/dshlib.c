@@ -64,10 +64,20 @@ int exec_local_cmd_loop()
     char blankString[20] = "";
     //command_list_t clist = {0};
     command_list_t *clist = malloc(sizeof(command_list_t));
+    
     cmd_buff_t *cmd = malloc(sizeof(cmd_buff_t));
+
+    //for (int k = 0; k < 7; k++)
+    //{
+    //    for (int i = 0; i < sizeof(clist->commands->argv); i++)
+    //    {
+    //        clist->commands[k].argv[i] = malloc(sizeof(char)*50);
+    //    }
+    //}
     cmd_buff = malloc(2*sizeof(char)*SH_CMD_MAX);
     int runPipeline = 0;
     int moveRedirect = 1;
+    char* cmdargs = malloc(sizeof(char)*60);
 
     char** argList = malloc(sizeof(argList) * 20);
     for (int k=0; k < 20; k++){argList[k] = malloc(sizeof(char) * 50);}
@@ -85,6 +95,7 @@ int exec_local_cmd_loop()
 
         //rc = build_cmd_list(cmd_buff, &clist);
         rc = build_cmd_list(cmd_buff, clist, cmd);
+        
 
            if (rc == OK)
            {
@@ -107,7 +118,9 @@ int exec_local_cmd_loop()
                     //if the command has args
                     else if (strcmp(clist->commands[commandCount].argv, blankString) != 0)
                     {
+                        //strcpy(cmdargs, cmd->argv);
                         getArgs(cmd, clist, commandCount, argList);
+                        
                         runPipeline = 1;
                     }
                     else printf("\n");
@@ -124,6 +137,7 @@ int exec_local_cmd_loop()
                     }
 
                     if (supervisor == 0) {  // Supervisor process
+                        
                         execute_pipeline(clist);
                         exit(EXIT_SUCCESS);
                     }
@@ -437,7 +451,14 @@ int parseArgs(char** argList, cmd_buff_t *cmd)
     argCpyLength = strlen(argCpy);
     
     //clear cmd->argv
-    for (int k=0; k < strlen(cmd->argv); k++){cmd->argv[k] = SPACE_CHAR;}
+    for (int i=0; i < CMD_ARGV_MAX; i++)
+    {
+        for (int k=0; k < strlen(cmd->argv); k++)
+        {
+            cmd->argv[i][k] = SPACE_CHAR;
+        }
+    }
+    
     
     //begin parse
     while (argCpyLength > 0)
@@ -564,7 +585,14 @@ void getArgs(cmd_buff_t *cmd, command_list_t *clist, int commandCount, char** ar
     strcpy(cmd->argv, clist->commands[commandCount].argv);
     strcpy(cmd->_cmd_buffer, clist->commands[commandCount]._cmd_buffer);
     int rc = parseArgs(argList, cmd);
-    strcpy(clist->commands[commandCount].argv, argList[0]);
+    clist->commands[commandCount].argc = cmd->argc;
+    
+    for (int i = 0; i < cmd->argc; i++)
+    {
+        strcpy(clist->commands[commandCount].argv[i], argList[i]);
+    }
+    //printf("arg count: %d\n", clist->commands[commandCount].argc);
+    //printf("arglist: %s, %s\n", argList[0], argList[1]);
 }
 
 void printError(int rc)
@@ -619,6 +647,7 @@ void printDragon(void)
 
 int execute_pipeline(command_list_t *clist) 
 {
+    
     int num_commands = clist->num + 1;
     // if > character is found reduce the number of commands by one (so it doesn't try to execute the filename)
     if (clist->commands[0].argc <= -10 || clist->commands[0].argc >= 10){num_commands = clist->num;}
@@ -646,7 +675,9 @@ int execute_pipeline(command_list_t *clist)
         }
         
         if (pids[i] == 0) 
-        {  // Child process
+        {  
+            
+            // Child process
             //if the redirect indicator is present create a file with the command name
             if (clist->commands[i].argc <= -10 || clist->commands[i].argc >= 10)
             {
@@ -700,8 +731,9 @@ int execute_pipeline(command_list_t *clist)
             }
 
             // if not a redirect create pipes as usual
-            if (clist->commands[i].argc == -1 || clist->commands[i].argc == 1)
+            if (clist->commands[i].argc == -1 || clist->commands[i].argc == 1|| clist->commands[i].argc == 2|| clist->commands[i].argc == -2)
             {
+                //printf("made it\n");
                 // Set up input pipe for all except first process
                 if (i > 0) {dup2(pipes[i-1][0], STDIN_FILENO);}
                 
@@ -727,7 +759,25 @@ int execute_pipeline(command_list_t *clist)
                 // Execute command with arguments
                 else if (clist->commands[i].argc > 0)
                 {
-                    char *args[] = {clist->commands[i]._cmd_buffer, clist->commands[i].argv, NULL};
+                    
+                    int j = 1;
+                    char** args = malloc(sizeof(char) * clist->commands[i].argc);
+                    
+                    for(j = 0; j <= clist->commands[i].argc + 1; j++)
+                    {
+                        args[j] =  malloc(sizeof(char)*50);
+                    }
+
+                    strcpy(args[0],clist->commands[i]._cmd_buffer);
+                    printf("args 0: %s\n", args[0]);
+                    for(j = 1; j <= clist->commands[i].argc; j++)
+                    {
+                        strcpy(args[j], clist->commands[i].argv[j-1]);
+                        printf("args[%d]: %s\n",j, args[j]);
+                    }
+                    
+                    args[clist->commands[i].argc+1] = NULL;
+                    printf("args count: %d\n", clist->commands[i].argc+1);
                     execvp(args[0], args);
                     perror("execvp");
                     exit(EXIT_FAILURE);
@@ -747,4 +797,5 @@ int execute_pipeline(command_list_t *clist)
     for (int i = 0; i < num_commands; i++) {
         waitpid(pids[i], NULL, 0);
     }
+    //return 0;
 }

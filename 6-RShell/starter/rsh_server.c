@@ -698,7 +698,7 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist)
                 }
 
                 // if not a redirect create pipes as usual
-                if (clist->commands[i].argc == -1 || clist->commands[i].argc == 1)
+                if (clist->commands[i].argc == -1 || clist->commands[i].argc == 1|| clist->commands[i].argc == 2|| clist->commands[i].argc == -2)
                 {
                     // For first command in pipeline, read from socket unless input redirected
                     if (i == 0 && !clist->commands[i].input_file) {dup2(cli_sock, STDIN_FILENO);}
@@ -752,11 +752,36 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist)
                         // Execute command with arguments
                         else if (clist->commands[i].argc > 0)
                         {
-                            char *args[] = {clist->commands[i]._cmd_buffer, clist->commands[i].argv, NULL};
+                            
+                            int j = 1;
+                            char** args = malloc(sizeof(char) * clist->commands[i].argc);
+                            
+                            for(j = 0; j <= clist->commands[i].argc + 1; j++)
+                            {
+                                args[j] =  malloc(sizeof(char)*50);
+                            }
+
+                            strcpy(args[0],clist->commands[i]._cmd_buffer);
+                            
+                            for(j = 1; j <= clist->commands[i].argc; j++)
+                            {
+                                strcpy(args[j], clist->commands[i].argv[j-1]);
+                                printf("args[%d]: %s\n",j, args[j]);
+                            }
+                            
+                            args[clist->commands[i].argc+1] = NULL;
+                            
                             execvp(args[0], args);
                             perror("execvp");
                             exit(EXIT_FAILURE);
                         }
+                        //else if (clist->commands[i].argc > 0)
+                        //{
+                        //    char *args[] = {clist->commands[i]._cmd_buffer, clist->commands[i].argv, NULL};
+                        //    execvp(args[0], args);
+                        //    perror("execvp");
+                        //    exit(EXIT_FAILURE);
+                        //}
                     }
                     
                 }

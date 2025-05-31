@@ -21,7 +21,7 @@ typedef struct command
 typedef struct cmd_buff
 {
     int  argc;
-    char *argv[CMD_ARGV_MAX];
+    char **argv[CMD_ARGV_MAX][50];
     char *_cmd_buffer[EXE_MAX];
     char *input_file;  // extra credit, stores input redirection file (for `<`)
     char *output_file; // extra credit, stores output redirection file (for `>`)

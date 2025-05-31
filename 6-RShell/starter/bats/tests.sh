@@ -33,7 +33,7 @@ ls -l | grep dshlib.c
 EOF
 
     # Verify key elements in the output
-    assert_output_contains "-rw------- 1 st9324vd domain users 23486 May 23 14:14 dshlib.c"
+    assert_output_contains "dshlib.c"
     assert_output_contains "cmd loop returned 0"
     
     # Verify the command executed successfully
@@ -101,7 +101,7 @@ ls -l | grep dshlib.c
 EOF
 
     # Verify key elements in the output
-    assert_output_contains "-rw------- 1 st9324vd domain users 23486 May 23 14:14 dshlib.c"
+    assert_output_contains "dshlib.c"
     assert_output_contains "cmd loop returned 0"
     
     # Verify the command executed successfully
