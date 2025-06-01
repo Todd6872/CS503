@@ -57,8 +57,10 @@
  *  Standard Library Functions You Might Want To Consider Using (assignment 2+)
  *      fork(), execvp(), exit(), chdir()
  */
+
 int exec_local_cmd_loop()
 {
+    int returnStatus = 0;
     char *cmd_buff;
     int rc = 0;
     char blankString[20] = "";
@@ -67,13 +69,6 @@ int exec_local_cmd_loop()
     
     cmd_buff_t *cmd = malloc(sizeof(cmd_buff_t));
 
-    //for (int k = 0; k < 7; k++)
-    //{
-    //    for (int i = 0; i < sizeof(clist->commands->argv); i++)
-    //    {
-    //        clist->commands[k].argv[i] = malloc(sizeof(char)*50);
-    //    }
-    //}
     cmd_buff = malloc(2*sizeof(char)*SH_CMD_MAX);
     int runPipeline = 0;
     int moveRedirect = 1;
@@ -106,6 +101,7 @@ int exec_local_cmd_loop()
                     if (strcmp(clist->commands[commandCount]._cmd_buffer, EXIT_CMD) == 0){return 0;}
                     else if (strcmp(clist->commands[commandCount]._cmd_buffer, "dragon") == 0){printDragon();}
                     else if (strcmp(clist->commands[commandCount]._cmd_buffer, "cd") == 0){rc = changeDir(cmd->argv);}
+                    else if (strcmp(clist->commands[commandCount]._cmd_buffer, "rc") == 0){printf("%d\n", returnStatus);}
 
                     //if the command has no args
                     else if (strcmp(clist->commands[commandCount].argv, blankString) == 0)
@@ -120,7 +116,6 @@ int exec_local_cmd_loop()
                     {
                         //strcpy(cmdargs, cmd->argv);
                         getArgs(cmd, clist, commandCount, argList);
-                        
                         runPipeline = 1;
                     }
                     else printf("\n");
@@ -138,12 +133,13 @@ int exec_local_cmd_loop()
 
                     if (supervisor == 0) {  // Supervisor process
                         
-                        execute_pipeline(clist);
-                        exit(EXIT_SUCCESS);
+                        int rc = execute_pipeline(clist);
+                        exit(EXIT_FAILURE);
                     }
 
                     // Main parent just waits for supervisor
                     waitpid(supervisor, NULL, 0);
+                    returnStatus = rc;
                 }
                 
             }
@@ -184,16 +180,17 @@ int build_cmd_list(char *cmd_line, command_list_t *clist, cmd_buff_t *cmd)
 
     int i = 0;
     int j = 0;
-    char arg[20] = "                    ";
+    char arg[SH_CMD_MAX] = " ";
     int argsFound = 0;
     int argStart = 0;
     int redirectFlag = 0;
 
+    
     command_t* command = malloc(sizeof(command_t));
     
     //Add a pipe to the end of comd_line so my search works
     strcat(cmd_line, PIPE_STRING);
-
+    
     //search for "args" in cmd_line and set flag if found
     int rc = searchString(cmd_line,"args");
     if (rc > 0){argsFound = 1;}
@@ -216,14 +213,14 @@ int build_cmd_list(char *cmd_line, command_list_t *clist, cmd_buff_t *cmd)
         for (int k = 0; k < sizeof(command->exe); k++){command->exe[k] = NULL;}
         
         //parse commands using pipe
-        //while (cmd_line[i] != PIPE_CHAR)
+        //printf("cmd_line: %s\n", cmd_line);
         while (cmd_line[i] != PIPE_CHAR && cmd_line[i] != '>')
         {
             commandUnparsed[j] = cmd_line[i];
             i++; // i tracks cmd_line position
             j++;// j tracks commandUnparsed position
         }
-
+        
         // set redirect flag if cmd_line[i] = '>'
         if (cmd_line[i] == '>'){redirectFlag = 1;}
         if (cmd_line[i] == '>' && cmd_line[i+1] == '>')
@@ -231,10 +228,10 @@ int build_cmd_list(char *cmd_line, command_list_t *clist, cmd_buff_t *cmd)
             i += 2;
             redirectFlag = 2;
         }
-
+        
         //add a space at the end of command
         commandUnparsed[j] = SPACE_CHAR;
-
+        
         //if commandUnparsed begins with a space, jump passed it
         j = 0;
         while (commandUnparsed[j] == SPACE_CHAR){j++;}
@@ -244,7 +241,7 @@ int build_cmd_list(char *cmd_line, command_list_t *clist, cmd_buff_t *cmd)
 
         //copy command to command structure
         strncpy(command->exe, commandUnparsed, j);
-
+        
         //remove leading and trailing spaces
         formatString(command->exe);
 
@@ -262,12 +259,12 @@ int build_cmd_list(char *cmd_line, command_list_t *clist, cmd_buff_t *cmd)
         }
         else argStart = rc +4; // argStart set to the end of where args is found in the input
 
+        
         //find the end of the argument list (end of unparsed input)
         while (j <= strlen(commandUnparsed)){j++;}
 
         //clear arg
-        for (int argClear = 0; argClear < 20; argClear++){arg[argClear] = NULL;}
-
+        for (int argClear = 0; argClear < SH_CMD_MAX; argClear++){arg[argClear] = NULL;}
         // copy arguments from unparsed buffer to arg container
         int argCount = 0;
         for (int k = argStart; k < j - 1; k++)
@@ -280,7 +277,7 @@ int build_cmd_list(char *cmd_line, command_list_t *clist, cmd_buff_t *cmd)
 
         //remove preceding or trailing spaces
         formatString(command->args);
-
+        
         //add to command structure to clist
         if (redirectFlag == 1){
             cmd->argc = 10;
@@ -292,14 +289,14 @@ int build_cmd_list(char *cmd_line, command_list_t *clist, cmd_buff_t *cmd)
             redirectFlag = 0;
         }
         else {cmd->argc = 1;}
-        //else {cmd->argc = count;}
-
+        
         strcpy(cmd->_cmd_buffer, command->exe);
         strcpy(cmd->argv, command->args);
+        
         clist->num = count;
-        //clist->commands[count] = *command;
+        
         clist->commands[count] = *cmd;
-
+        
         //keeping searching through input
         i+=1;
         //reset the unparsed buffer pointer
@@ -421,10 +418,19 @@ void printWorkingDir()
 
 int changeDir(char* newDirectory)
 {
+    //printf("newDirectory: %s (%d)\n", newDirectory, strlen(newDirectory));
     char cwd[100];
     getcwd(cwd, sizeof(cwd));
     strcat(cwd, "/");
+    //int cwdLength = strlen(cwd);
     strcat(cwd, newDirectory);
+    //int ndLength = strlen(cwd);
+    //if (cwdLength == ndLength)
+    //{
+        //printf("made it\n");
+    //    newDirectory = "/home/st9324vd/";
+    //}
+    //printf("cwd: %s\n", cwd);
     if (chdir(newDirectory) == 0){return 0;}
     return -1;
 }
@@ -432,14 +438,13 @@ int changeDir(char* newDirectory)
 //parses multple args inlcuding anything in quotes
 int parseArgs(char** argList, cmd_buff_t *cmd)
 {
-    
+    //printf("cmd argv: %s\n", cmd->argv);
     char* argCpy = malloc(sizeof(char) * 50);
     char* temp = malloc(sizeof(char) * 50);
     
     int argCount = 0;
     int i=0;
     int argCpyLength;
-    
     
     //copy cmd->argv to argCpy
     strcpy(argCpy, cmd->argv);
@@ -474,31 +479,34 @@ int parseArgs(char** argList, cmd_buff_t *cmd)
         //if the first thing we find is a space capture that arg to argv
         if (argCpy[i] == SPACE_CHAR){
             strncpy(cmd->argv, argCpy, i);
+            formatString(cmd->argv);
         }
         
         //if the first thing we find is a quote, find the next quote
         else if (argCpy[i] == 34)
         {
             //find next quote
-            int k=1;
+            int k = i + 1;
             while (argCpy[k] != 34 && k < strlen(argCpy)){k++;}
             
             //        copy to temp and format
             //create temp string
-            char* copyString = malloc(sizeof(char)*strlen(argCpy));
+            char* copyString = malloc(sizeof(char)*k);
+            
             //clear temp string
-            strcpy(copyString, " ");
+            for (int count=0; count <= k; count++){copyString[count] = NULL;}
+            
             //move contents of argCpy to temp string
-            for (int copy = 0; copy < k; copy++){copyString[copy] = argCpy[copy];}
-            for (int copy = k; copy < strlen(copyString); copy++){copyString[copy] = SPACE_CHAR;}
+            for (int copy = i; copy < k; copy++){copyString[copy] = argCpy[copy];}
             
             //format temp string
             stripLeadingZeros(copyString);
             //move temp to argv
             strcpy(cmd->argv, copyString);
-
+            
             i = k+1;
             free(copyString);
+            //quoteFlag = 1;
         }
         
         //move arg to arg-list
@@ -591,8 +599,7 @@ void getArgs(cmd_buff_t *cmd, command_list_t *clist, int commandCount, char** ar
     {
         strcpy(clist->commands[commandCount].argv[i], argList[i]);
     }
-    //printf("arg count: %d\n", clist->commands[commandCount].argc);
-    //printf("arglist: %s, %s\n", argList[0], argList[1]);
+    
 }
 
 void printError(int rc)
@@ -647,7 +654,7 @@ void printDragon(void)
 
 int execute_pipeline(command_list_t *clist) 
 {
-    
+    //printf("arg count: %d\n", clist->commands[0].argc);
     int num_commands = clist->num + 1;
     // if > character is found reduce the number of commands by one (so it doesn't try to execute the filename)
     if (clist->commands[0].argc <= -10 || clist->commands[0].argc >= 10){num_commands = clist->num;}
@@ -679,7 +686,7 @@ int execute_pipeline(command_list_t *clist)
             
             // Child process
             //if the redirect indicator is present create a file with the command name
-            if (clist->commands[i].argc <= -10 || clist->commands[i].argc >= 10)
+            if (abs(clist->commands[i].argc > 10))
             {
                 char* filename = clist->commands[i + 1]._cmd_buffer;
                 int out = 0;
@@ -731,7 +738,7 @@ int execute_pipeline(command_list_t *clist)
             }
 
             // if not a redirect create pipes as usual
-            if (clist->commands[i].argc == -1 || clist->commands[i].argc == 1|| clist->commands[i].argc == 2|| clist->commands[i].argc == -2)
+            if (abs(clist->commands[i].argc < 10))
             {
                 //printf("made it\n");
                 // Set up input pipe for all except first process
@@ -753,34 +760,37 @@ int execute_pipeline(command_list_t *clist)
                     char *args[] = {clist->commands[i]._cmd_buffer, NULL, NULL};
                     execvp(args[0], args);
                     perror("execvp");
-                    exit(EXIT_FAILURE);
+                    exit(errno);
                 }
                 
                 // Execute command with arguments
                 else if (clist->commands[i].argc > 0)
                 {
                     
-                    int j = 1;
-                    char** args = malloc(sizeof(char) * clist->commands[i].argc);
-                    
-                    for(j = 0; j <= clist->commands[i].argc + 1; j++)
-                    {
-                        args[j] =  malloc(sizeof(char)*50);
-                    }
+                    //allocate and clear args memory
+                    int numberArgs = clist->commands[i].argc;
+                    char** args = malloc(numberArgs + 1 * sizeof(char));   
+                    for(int k = 0; k <= numberArgs + 1; k++){args[k] =  malloc(sizeof(char) * (100));}     
+                    for(int k = 0; k <= numberArgs + 1; k++){strcpy(args[k], "");}                             
 
-                    strcpy(args[0],clist->commands[i]._cmd_buffer);
-                    printf("args 0: %s\n", args[0]);
-                    for(j = 1; j <= clist->commands[i].argc; j++)
-                    {
-                        strcpy(args[j], clist->commands[i].argv[j-1]);
-                        printf("args[%d]: %s\n",j, args[j]);
-                    }
+                    //move arguments to args
+                    for(int j = 1; j <= clist->commands[i].argc; j++){strcpy(args[j], clist->commands[i].argv[j-1]);}
                     
+                    //move command to args 0
+                    strcpy(args[0], clist->commands[i]._cmd_buffer);
+
+                    //write NULL to last args entry
                     args[clist->commands[i].argc+1] = NULL;
-                    printf("args count: %d\n", clist->commands[i].argc+1);
+                    
+                    //print args
+                    //for (int k = 0; k <= clist->commands[i].argc; k++){printf("args[%d]: %s (%d)\n", k, args[k], strlen(args[k]));}
+
                     execvp(args[0], args);
                     perror("execvp");
-                    exit(EXIT_FAILURE);
+                    exit(errno);
+                    //free args
+                    for(int k = 0; k <= clist->commands[i].argc + 1; k++){free(args[k]);}
+                    free(args);
                 }
             }
             
@@ -797,5 +807,4 @@ int execute_pipeline(command_list_t *clist)
     for (int i = 0; i < num_commands; i++) {
         waitpid(pids[i], NULL, 0);
     }
-    //return 0;
 }

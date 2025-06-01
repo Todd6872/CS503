@@ -28,6 +28,7 @@ assert_output_contains() {
     sleep 1 &
     sleep 1 &
     sleep 1 &
+    sleep 1 &
     run ./dsh -c -i 0.0.0.0 -p 7890 <<EOF              
 ls -l | grep dshlib.c
 EOF
@@ -42,6 +43,7 @@ EOF
 
 @test "Client-Server uname" {
     run ./dsh -s -i 0.0.0.0 -p 7890 &
+    sleep 1 &
     sleep 1 &
     sleep 1 &
     sleep 1 &
@@ -62,6 +64,7 @@ EOF
     sleep 1 &
     sleep 1 &
     sleep 1 &
+    sleep 1 &
     run ./dsh -c -i 0.0.0.0 -p 7890 <<EOF              
 echo " hello     world     "
 EOF
@@ -79,6 +82,7 @@ EOF
     sleep 1 &
     sleep 1 &
     sleep 1 &
+    sleep 1 &
     run ./dsh -c -i 0.0.0.0 -p 7890 <<EOF                
 which which
 EOF
@@ -89,6 +93,50 @@ EOF
     # Expected output with all whitespace removed for easier matching
     assert_output_contains "/usr/bin/which"
     assert_output_contains "cmd loop returned 0"
+
+     # Verify the command executed successfully
+    [ "$status" -eq 0 ]
+
+}
+
+@test "Client-Server find in file" {
+    run ./dsh -s -i 0.0.0.0 -p 7890 &
+    sleep 1 &
+    sleep 1 &
+    sleep 1 &
+    sleep 1 &
+    run ./dsh -c -i 0.0.0.0 -p 7890 <<EOF                
+grep "exit(EXIT_FAILURE)" dshlib.c
+EOF
+
+    # Strip all whitespace (spaces, tabs, newlines) from the output
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+
+    # Expected output with all whitespace removed for easier matching
+    assert_output_contains "exit(EXIT_FAILURE);"
+    assert_output_contains "cmd loop returned 0"
+
+     # Verify the command executed successfully
+    [ "$status" -eq 0 ]
+
+}
+
+@test "Client-Server stop-server" {
+    run ./dsh -s -i 0.0.0.0 -p 7890 &
+    sleep 1 &
+    sleep 1 &
+    sleep 1 &
+    sleep 1 &
+    run ./dsh -c -i 0.0.0.0 -p 7890 <<EOF                
+stop-server
+EOF
+
+    # Strip all whitespace (spaces, tabs, newlines) from the output
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+
+    # Expected output with all whitespace removed for easier matching
+    assert_output_contains "server appeared to terminate - exiting"
+    assert_output_contains "cmd loop returned -50"
 
      # Verify the command executed successfully
     [ "$status" -eq 0 ]

@@ -19,7 +19,7 @@
 #include "rshlib.h"
 
 static int is_threaded_server = false;
-
+pthread_mutex_t lock;
 /*
  * start_server(ifaces, port, is_threaded)
  *      ifaces:  a string in ip address format, indicating the interface
@@ -305,7 +305,11 @@ int exec_client_thread(int main_socket, int cli_socket) {
     tinfo->server_socket = main_socket;
     tinfo->client_socket = cli_socket;
 
-    
+    if (pthread_mutex_init(&lock, NULL) != 0) 
+    {
+        printf("\n mutex init has failed\n");
+        return 1;
+    }
 
     if (pthread_create(&thread_id, NULL, handle_client, (void *)tinfo) < 0) {
         perror("could not create thread");
@@ -320,18 +324,24 @@ int exec_client_thread(int main_socket, int cli_socket) {
     return OK;
 }
 
-void *handle_client(void *arg) { 
+void *handle_client(void *arg) 
+{ 
+    
     thread_info_t *tinfo = (thread_info_t *)arg;
     int rc;
 
     //handles client requests in loop.
+    pthread_mutex_lock(&lock);
     rc = exec_client_requests(tinfo->client_socket);
-    if (rc == OK){
-        
+    printf("rc: %d\n", rc);
+    pthread_mutex_unlock(&lock);
+    if (rc == OK)
+    {
         free(tinfo);        //was malloc'd
         //just return since this is a detached thread handler
         return NULL;
-    } else {
+    } else 
+    {
         
         //unexpected error, force the overall process to close
         close(tinfo->server_socket);
@@ -343,10 +353,7 @@ void *handle_client(void *arg) {
 
 
 int exec_client_requests(int cli_socket) {
-    
-    
-    //command_list_t cmd_list;
-    //command_list_t *cmd_list = malloc(sizeof(command_list_t));
+    printf("cli socket: %d\n", cli_socket);
     int io_size;
     int rc;
     int cmd_rc;
@@ -363,18 +370,16 @@ int exec_client_requests(int cli_socket) {
     if (io_buff == NULL){
         return ERR_RDSH_SERVER;
     }
-    
+    printf("io_buff initialized\n");
     while(1) {
         
         runPipeline = 1;
         //clear buffers
-        
-        //for (int k=0; k < sizeof(io_buff); k++){io_buff[k] = '0';}
         memset(io_buff, 0, RDSH_COMM_BUFF_SZ);
         // TODO use recv() syscall to get input
-
-        io_size = recv(cli_socket, io_buff, RDSH_COMM_BUFF_SZ, 0);
         
+        io_size = recv(cli_socket, io_buff, RDSH_COMM_BUFF_SZ, 0);
+        printf("io size: %d\n", io_size);
         //printf("io_size: %d\n", io_size);
         if (io_size == -1){
             perror("recv");
@@ -390,7 +395,7 @@ int exec_client_requests(int cli_socket) {
             break;      //leave loop, close connection
         }
 
-
+        
         // TODO build up a cmd_list
         rc = build_cmd_list((char *)io_buff, clist, cmd);
         
@@ -430,6 +435,8 @@ int exec_client_requests(int cli_socket) {
                         free(clist);
                         return -10;
                     }
+
+                    //else if (strcmp(clist->commands[commandCount]._cmd_buffer, "dragon") == 0){printDragon();}
 
                     //if the command has no args
                     else if (strcmp(clist->commands[commandCount].argv, blankString) == 0)
@@ -753,35 +760,32 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist)
                         else if (clist->commands[i].argc > 0)
                         {
                             
-                            int j = 1;
-                            char** args = malloc(sizeof(char) * clist->commands[i].argc);
-                            
-                            for(j = 0; j <= clist->commands[i].argc + 1; j++)
-                            {
-                                args[j] =  malloc(sizeof(char)*50);
-                            }
+                            //allocate and clear args memory
+                            int numberArgs = clist->commands[i].argc;
+                            char** args = malloc(numberArgs + 1 * sizeof(char));   
+                            for(int k = 0; k <= numberArgs + 1; k++){args[k] =  malloc(sizeof(char) * (100));}     
+                            for(int k = 0; k <= numberArgs + 1; k++){strcpy(args[k], "");}                             
 
-                            strcpy(args[0],clist->commands[i]._cmd_buffer);
+                            //move arguments to args
+                            for(int j = 1; j <= clist->commands[i].argc; j++){strcpy(args[j], clist->commands[i].argv[j-1]);}
                             
-                            for(j = 1; j <= clist->commands[i].argc; j++)
-                            {
-                                strcpy(args[j], clist->commands[i].argv[j-1]);
-                                printf("args[%d]: %s\n",j, args[j]);
-                            }
-                            
+                            //move command to args 0
+                            strcpy(args[0], clist->commands[i]._cmd_buffer);
+
+                            //write NULL to last args entry
                             args[clist->commands[i].argc+1] = NULL;
                             
+                            //print args
+                            //for (int k = 0; k <= clist->commands[i].argc; k++){printf("args[%d]: %s (%d)\n", k, args[k], strlen(args[k]));}
+
                             execvp(args[0], args);
                             perror("execvp");
                             exit(EXIT_FAILURE);
+                            //free args
+                            for(int k = 0; k <= clist->commands[i].argc + 1; k++){free(args[k]);}
+                            free(args);
                         }
-                        //else if (clist->commands[i].argc > 0)
-                        //{
-                        //    char *args[] = {clist->commands[i]._cmd_buffer, clist->commands[i].argv, NULL};
-                        //    execvp(args[0], args);
-                        //    perror("execvp");
-                        //    exit(EXIT_FAILURE);
-                        //}
+                        
                     }
                     
                 }
