@@ -22,7 +22,6 @@ assert_output_contains() {
     fi
 }
 
-
 @test "Client-Server Pipes" {
     run ./dsh -s -i 0.0.0.0 -p 7890 &
     sleep 1 &
